@@ -7,6 +7,7 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Label,
   Line,
   LineChart,
   Pie,
@@ -21,6 +22,8 @@ import jsPDF from "jspdf";
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
+import { formatCurrency, useCurrency } from "../../context/CurrencyContext";
+import { displayCategoryName } from "../../utils/categoryPresentation";
 import {
   Skeleton,
   SkeletonChart,
@@ -28,10 +31,11 @@ import {
 } from "../../components/Skeleton/Skeleton";
 import "./Reports.css";
 
-const COLORS = ["#C7F36B", "#38BDF8", "#2563eb", "#16a34a", "#a855f7", "#0ea5e9"];
+const COLORS = ["#14532d", "#15803d", "#22c55e", "#4d7c0f", "#65a30d", "#84cc16"];
 
 function Reports() {
   const navigate = useNavigate();
+  const { currency } = useCurrency();
   const reportRef = useRef(null);
 
   const [monthly, setMonthly] = useState([]);
@@ -199,7 +203,7 @@ function Reports() {
       txns
         .filter((t) => t.type === "expense")
         .forEach((t) => {
-          const name = t.category?.name || "Uncategorized";
+          const name = displayCategoryName(t.category?.name || "Uncategorized");
           if (!catMap[name]) catMap[name] = 0;
           catMap[name] += t.amount;
         });
@@ -446,7 +450,7 @@ function Reports() {
   }
 
   return (
-    <div>
+    <div className="reports-page">
       <div className="page-heading">
         <div>
           <h1>Reports</h1>
@@ -572,15 +576,15 @@ function Reports() {
         <div className="report-summary">
           <div>
             <span>Total Income</span>
-            <strong>₹{summary.income.toLocaleString()}</strong>
+            <strong>{formatCurrency(summary.income, currency)}</strong>
           </div>
           <div>
             <span>Total Expenses</span>
-            <strong>₹{summary.expense.toLocaleString()}</strong>
+            <strong>{formatCurrency(summary.expense, currency)}</strong>
           </div>
           <div>
             <span>Total Savings</span>
-            <strong>₹{summary.savings.toLocaleString()}</strong>
+            <strong>{formatCurrency(summary.savings, currency)}</strong>
           </div>
         </div>
 
@@ -597,11 +601,16 @@ function Reports() {
                   <LineChart data={monthly}>
                     <CartesianGrid stroke="#eee" vertical={false} />
                     <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
+                    <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
+                    <Tooltip
+                      formatter={(value) => formatCurrency(value, currency)}
+                      contentStyle={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-light)", borderRadius: 10, boxShadow: "var(--shadow-md)" }}
+                      labelStyle={{ color: "var(--ink-primary)", fontWeight: 700 }}
+                      itemStyle={{ color: "var(--text-main)" }}
+                    />
                     <Legend />
-                    <Line dataKey="income" stroke="#16a34a" strokeWidth={2} />
-                    <Line dataKey="expense" stroke="#7f1d3a" strokeWidth={2} />
+                    <Line dataKey="income" stroke="#15803d" strokeWidth={2.5} />
+                    <Line dataKey="expense" stroke="#84cc16" strokeWidth={2.5} />
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -622,14 +631,49 @@ function Reports() {
                       data={categories}
                       dataKey="value"
                       nameKey="name"
-                      innerRadius={48}
-                      outerRadius={75}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={58}
+                      outerRadius={86}
+                      paddingAngle={2}
+                      stroke="var(--surface-card)"
+                      strokeWidth={2}
                     >
                       {categories.map((c) => (
                         <Cell key={c.name} fill={c.color} />
                       ))}
+                      <Label
+                        position="center"
+                        content={({ viewBox }) => {
+                          const { cx, cy } = viewBox || {};
+                          if (typeof cx !== "number" || typeof cy !== "number") return null;
+                          return (
+                            <g className="report-pie-center-label">
+                              <text x={cx} y={cy - 2} textAnchor="middle" dominantBaseline="middle" className="report-pie-total">
+                                {formatCurrency(summary.expense, currency)}
+                              </text>
+                              <text x={cx} y={cy + 20} textAnchor="middle" dominantBaseline="middle" className="report-pie-caption">
+                                Total Expenses
+                              </text>
+                            </g>
+                          );
+                        }}
+                      />
                     </Pie>
-                    <Tooltip />
+                    <Legend
+                      layout="vertical"
+                      align="right"
+                      verticalAlign="middle"
+                      iconType="circle"
+                      wrapperStyle={{ width: "48%", right: 0, lineHeight: "1.5" }}
+                      formatter={(value) => <span className="report-pie-legend-label">{value}</span>}
+                    />
+                    <Tooltip
+                      formatter={(value) => formatCurrency(value, currency)}
+                      contentStyle={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-light)", borderRadius: 10, boxShadow: "var(--shadow-md)" }}
+                      labelStyle={{ color: "var(--ink-primary)", fontWeight: 700 }}
+                      itemStyle={{ color: "var(--text-main)" }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -648,9 +692,14 @@ function Reports() {
                   <BarChart data={weekly}>
                     <CartesianGrid stroke="#eee" vertical={false} />
                     <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="amount" fill="#7f1d3a" radius={[4, 4, 0, 0]} />
+                    <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
+                    <Tooltip
+                      formatter={(value) => formatCurrency(value, currency)}
+                      contentStyle={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-light)", borderRadius: 10, boxShadow: "var(--shadow-md)" }}
+                      labelStyle={{ color: "var(--ink-primary)", fontWeight: 700 }}
+                      itemStyle={{ color: "var(--text-main)" }}
+                    />
+                    <Bar dataKey="amount" fill="#15803d" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -669,9 +718,14 @@ function Reports() {
                   <BarChart data={weeklySummary}>
                     <CartesianGrid stroke="#eee" vertical={false} />
                     <XAxis dataKey="week" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="amount" fill="#9CC83E" radius={[4, 4, 0, 0]} />
+                    <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
+                    <Tooltip
+                      formatter={(value) => formatCurrency(value, currency)}
+                      contentStyle={{ backgroundColor: "var(--surface-card)", border: "1px solid var(--border-light)", borderRadius: 10, boxShadow: "var(--shadow-md)" }}
+                      labelStyle={{ color: "var(--ink-primary)", fontWeight: 700 }}
+                      itemStyle={{ color: "var(--text-main)" }}
+                    />
+                    <Bar dataKey="amount" fill="#84cc16" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}

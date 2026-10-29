@@ -4,6 +4,7 @@ import {
   Bookmark,
   BookmarkCheck,
   CalendarDays,
+  Download,
   Lightbulb,
   TrendingUp,
   Sparkles,
@@ -11,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import jsPDF from "jspdf";
 
 import API from "../../api/axios";
 import {
@@ -87,6 +89,101 @@ function Insights() {
       );
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const downloadInsightPdf = (insight) => {
+    try {
+      const pdf = new jsPDF({ unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 18;
+      const lineHeight = 6;
+      let y = 20;
+
+      pdf.setFillColor(20, 83, 45);
+      pdf.roundedRect(margin, y, pageWidth - margin * 2, 25, 4, 4, "F");
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(17);
+      pdf.text("Campus Coin Spending Insight", margin + 7, y + 11);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.text(String(insight.month || "Monthly report"), margin + 7, y + 19);
+      y += 37;
+
+      const ensureSpace = (height = lineHeight) => {
+        if (y + height > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+      };
+
+      const addSection = (heading, body) => {
+        if (!body) return;
+        ensureSpace(15);
+        pdf.setTextColor(22, 101, 52);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(12);
+        pdf.text(heading, margin, y);
+        y += 7;
+
+        pdf.setTextColor(45, 55, 50);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10.5);
+        const lines = pdf.splitTextToSize(String(body), pageWidth - margin * 2);
+        lines.forEach((line) => {
+          ensureSpace(lineHeight);
+          pdf.text(line, margin, y);
+          y += lineHeight;
+        });
+        y += 5;
+      };
+
+      const title = insight.summaryText?.split(".")[0] || "Monthly Summary";
+      addSection("Overview", title);
+      addSection("Spending Summary", insight.summaryText);
+
+      if (insight.flaggedCategories?.length) {
+        ensureSpace(15);
+        pdf.setTextColor(22, 101, 52);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(12);
+        pdf.text("Categories to review", margin, y);
+        y += 7;
+        pdf.setTextColor(45, 55, 50);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10.5);
+        insight.flaggedCategories.forEach((item) => {
+          const lines = pdf.splitTextToSize(`- ${item.message}`, pageWidth - margin * 2);
+          lines.forEach((line) => {
+            ensureSpace(lineHeight);
+            pdf.text(line, margin, y);
+            y += lineHeight;
+          });
+          y += 2;
+        });
+        y += 3;
+      }
+
+      addSection("Suggested Action", insight.tipText);
+
+      const pageCount = pdf.internal.getNumberOfPages();
+      for (let page = 1; page <= pageCount; page += 1) {
+        pdf.setPage(page);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        pdf.setTextColor(110, 120, 114);
+        pdf.text("Campus Coin | AI-generated student spending insight", margin, pageHeight - 9);
+        pdf.text(`${page} / ${pageCount}`, pageWidth - margin, pageHeight - 9, { align: "right" });
+      }
+
+      const safeMonth = String(insight.month || "monthly").replace(/[^a-z0-9-]+/gi, "-");
+      pdf.save(`campus-coin-insight-${safeMonth}.pdf`);
+      toast.success("Insight PDF downloaded");
+    } catch (error) {
+      console.error("Insight PDF export failed:", error);
+      toast.error("Could not download this insight PDF");
     }
   };
 
@@ -268,6 +365,16 @@ function Insights() {
                     ) : (
                       <Bookmark size={19} />
                     )}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="insight-download-btn"
+                    onClick={() => downloadInsightPdf(insight)}
+                    aria-label="Download insight as PDF"
+                    title="Download as PDF"
+                  >
+                    <Download size={19} />
                   </button>
 
                   <button

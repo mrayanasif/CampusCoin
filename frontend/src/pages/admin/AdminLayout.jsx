@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   ChartNoAxesColumnIncreasing,
   FolderCog,
+  Globe2,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -45,6 +46,7 @@ function AdminLayout() {
     closeSidebar();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    window.dispatchEvent(new Event("campuscoin:auth-changed"));
     document.body.classList.remove("dark-mode");
     toast.success("Logged out");
     setTimeout(() => navigate("/login"), 400);
@@ -131,6 +133,10 @@ function AdminLayout() {
         </nav>
 
         <div className="admin-sidebar-footer">
+          <button type="button" className="admin-website" onClick={() => { closeSidebar(); navigate("/"); }}>
+            <Globe2 size={18} />
+            Visit Website
+          </button>
           <button type="button" className="admin-logout" onClick={handleLogout}>
             <LogOut size={18} />
             Logout

@@ -19,6 +19,8 @@ import {
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
+import { formatCurrency, useCurrency } from "../../context/CurrencyContext";
+import { displayCategoryName } from "../../utils/categoryPresentation";
 import {
   Skeleton,
   SkeletonCard,
@@ -53,6 +55,7 @@ const COLORS = [
 ];
 
 function Dashboard() {
+  const { currency } = useCurrency();
   const navigate = useNavigate();
   const [user] = useState(readStoredUser);
   const [dashboardData, setDashboardData] = useState(null);
@@ -105,7 +108,7 @@ function Dashboard() {
         setBudgets(
           budgetRows.map((b) => ({
             id: b._id || b.category || b.categoryName,
-            name: b.categoryName || b.category?.name || b.name || "Category",
+            name: displayCategoryName(b.categoryName || b.category?.name || b.name || "Category"),
             spent: Number(b.spent ?? b.used ?? 0),
             limit: Number(b.limit ?? b.limitAmount ?? 0),
             percent:
@@ -306,7 +309,7 @@ function Dashboard() {
       <div className="summary-grid">
         <div className="summary-card income-card">
           <span className="summary-label">Total Income</span>
-          <h2>₹{income.toLocaleString()}</h2>
+          <h2>{formatCurrency(income, currency)}</h2>
           <span className="summary-change positive">
             <ArrowUpRight size={14} />
             This month
@@ -315,7 +318,7 @@ function Dashboard() {
 
         <div className="summary-card expense-card">
           <span className="summary-label">Total Expenses</span>
-          <h2>₹{expense.toLocaleString()}</h2>
+          <h2>{formatCurrency(expense, currency)}</h2>
           <span className="summary-change negative">
             <ArrowDownRight size={14} />
             This month
@@ -324,7 +327,7 @@ function Dashboard() {
 
         <div className="summary-card">
           <span className="summary-label">Balance</span>
-          <h2>₹{balance.toLocaleString()}</h2>
+          <h2>{formatCurrency(balance, currency)}</h2>
           <span className="summary-change positive">
             <Wallet size={14} />
             Available balance
@@ -333,7 +336,7 @@ function Dashboard() {
 
         <div className="summary-card">
           <span className="summary-label">Savings Goal</span>
-          <h2>₹{savingsGoal.toLocaleString()}</h2>
+          <h2>{formatCurrency(savingsGoal, currency)}</h2>
           <span className="summary-change goal">
             <PiggyBank size={14} />
             Your target
@@ -369,8 +372,7 @@ function Dashboard() {
                     <div className="budget-info">
                       <span>{budget.name}</span>
                       <small>
-                        ₹{budget.spent.toLocaleString()} / ₹
-                        {budget.limit.toLocaleString()}
+                        {formatCurrency(budget.spent, currency)} / {formatCurrency(budget.limit, currency)}
                       </small>
                     </div>
 
@@ -434,12 +436,12 @@ function Dashboard() {
                           />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip formatter={(value) => formatCurrency(value, currency)} />
                     </PieChart>
                   </ResponsiveContainer>
 
                   <div className="chart-total">
-                    <strong>₹{expense.toLocaleString()}</strong>
+                    <strong>{formatCurrency(expense, currency)}</strong>
                     <span>Total Expenses</span>
                   </div>
                 </div>
@@ -469,7 +471,7 @@ function Dashboard() {
           <span>This Month's Top Category</span>
           <strong>{topCategory?.category || "No data"}</strong>
           <p>
-            ₹{(topCategory?.total || 0).toLocaleString()} spent this month
+            {formatCurrency(topCategory?.total || 0, currency)} spent this month
           </p>
         </div>
 
@@ -534,9 +536,9 @@ function Dashboard() {
                     <li key={txn._id}>
                       <span>
                         {new Date(txn.date).toLocaleDateString()} ·{" "}
-                        {txn.category?.name || "Uncategorized"}
+                        {displayCategoryName(txn.category?.name || "Uncategorized")}
                       </span>
-                      <strong>₹{Number(txn.amount || 0).toLocaleString()}</strong>
+                      <strong>{formatCurrency(txn.amount, currency)}</strong>
                     </li>
                   ))}
                 </ul>
@@ -553,9 +555,9 @@ function Dashboard() {
                     <li key={txn._id}>
                       <span>
                         {new Date(txn.date).toLocaleDateString()} ·{" "}
-                        {txn.category?.name || "Uncategorized"}
+                        {displayCategoryName(txn.category?.name || "Uncategorized")}
                       </span>
-                      <strong>₹{Number(txn.amount || 0).toLocaleString()}</strong>
+                      <strong>{formatCurrency(txn.amount, currency)}</strong>
                     </li>
                   ))}
                 </ul>
@@ -576,7 +578,7 @@ function Dashboard() {
               </ul>
               {(activity.unusual?.unusual || []).slice(0, 1).map((txn) => (
                 <p className="smart-flag" key={txn._id}>
-                  ₹{Number(txn.amount || 0).toLocaleString()} on{" "}
+                  {formatCurrency(txn.amount, currency)} on{" "}
                   {new Date(txn.date).toLocaleDateString()} is well above your
                   average expense.
                 </p>
@@ -588,7 +590,7 @@ function Dashboard() {
               {typeof activity.forecast?.forecast === "number" ? (
                 <>
                   <strong className="smart-forecast">
-                    ₹{Number(activity.forecast.forecast).toLocaleString()}
+                    {formatCurrency(activity.forecast.forecast, currency)}
                   </strong>
                   <p className="smart-empty">
                     Based on {activity.forecast.basedOnMonths || 0} month(s) of

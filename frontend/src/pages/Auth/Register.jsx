@@ -14,6 +14,7 @@ import {
 import toast from "react-hot-toast";
 
 import Navbar from "../../components/Navbar/Navbar";
+import { fromPKR, toPKR, useCurrency } from "../../context/CurrencyContext";
 import API from "../../api/axios";
 import "./Auth.css";
 
@@ -21,19 +22,11 @@ function Register() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [currency, setCurrency] = useState(() => localStorage.getItem("currency") || "PKR");
+  const { currency, toggleCurrency } = useCurrency();
   const [theme, setTheme] = useState(() => {
     const preferences = JSON.parse(localStorage.getItem("student_preferences") || "{}");
     return preferences.darkMode ? "dark" : "light";
   });
-
-  const toggleCurrency = () => {
-    setCurrency((current) => {
-      const next = current === "PKR" ? "USD" : "PKR";
-      localStorage.setItem("currency", next);
-      return next;
-    });
-  };
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -76,6 +69,16 @@ function Register() {
       return toast.error("Password must be at least 8 characters");
     if (/[_\-,]/.test(password))
       return toast.error("Password cannot contain underscore, hyphen, or comma");
+    if (!/[A-Z]/.test(password))
+      return toast.error("Password must include at least one uppercase letter");
+    if (!/[a-z]/.test(password))
+      return toast.error("Password must include at least one lowercase letter");
+    if (!/[0-9]/.test(password))
+      return toast.error("Password must include at least one number");
+    if (!/[^A-Za-z0-9\s_\-,]/.test(password))
+      return toast.error("Password must include at least one special character");
+    if (/\s/.test(password))
+      return toast.error("Password cannot contain spaces");
     if (!confirmPassword) return toast.error("Please confirm your password");
     if (password !== confirmPassword)
       return toast.error("Passwords do not match");
@@ -98,7 +101,7 @@ function Register() {
         email,
         password,
         academicYear: academicYearMap[academicYear] || academicYear,
-        monthlyAllowance: Number(allowance) || 0,
+        monthlyAllowance: toPKR(allowance, currency),
         savingsGoal: 0,
       });
 
@@ -238,7 +241,7 @@ function Register() {
                         name="allowance"
                         type="number"
                         min="0"
-                        placeholder={currency === "PKR" ? "₨ 0" : "$ 0"}
+                        placeholder={`${currency === "PKR" ? "₨" : "$"} ${fromPKR(0, currency)}`}
                         required
                       />
                     </div>
@@ -253,11 +256,11 @@ function Register() {
                       id="register-password"
                       name="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="At least 8 characters"
+                      placeholder="8+ characters with upper, lower, number & symbol"
                       required
                       minLength={8}
-                      pattern="[^_,-]{8,}"
-                      title="At least 8 characters; no underscore, hyphen, or comma"
+                      pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\\s_\\-,])[^\\s_\\-,]{8,}"
+                      title="At least 8 characters with uppercase, lowercase, a number, and a special character. Spaces, underscores, hyphens, and commas are not allowed."
                     />
                     <button
                       type="button"
@@ -281,8 +284,8 @@ function Register() {
                       placeholder="Re-enter your password"
                       required
                       minLength={8}
-                      pattern="[^_,-]{8,}"
-                      title="At least 8 characters; no underscore, hyphen, or comma"
+                      pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\\s_\\-,])[^\\s_\\-,]{8,}"
+                      title="At least 8 characters with uppercase, lowercase, a number, and a special character. Spaces, underscores, hyphens, and commas are not allowed."
                     />
                   </div>
                 </div>

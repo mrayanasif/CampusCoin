@@ -48,6 +48,16 @@
 .nav-login-link {
   padding: 6px 8px;
 }
+.nav-logout-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+.nav-logout-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
 .navbar-actions-wrapper {
   flex-shrink: 0;
   align-items: center;

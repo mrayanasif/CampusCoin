@@ -15,6 +15,8 @@ import {
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
+import { formatCurrency, fromPKR, toPKR, useCurrency } from "../../context/CurrencyContext";
+import { displayCategoryName, sortExpenseCategories } from "../../utils/categoryPresentation";
 import { Skeleton } from "../../components/Skeleton/Skeleton";
 import "./Transactions.css";
 
@@ -26,6 +28,7 @@ const PAGE_SIZE = 20;
 const getTodayString = () => new Date().toLocaleDateString("en-CA");
 
 function Transactions() {
+  const { currency } = useCurrency();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const quickAddType = searchParams.get("add");
@@ -288,7 +291,7 @@ function Transactions() {
     const form = new FormData(formElement);
 
     const type = form.get("type");
-    const amount = Number(form.get("amount"));
+    const amount = toPKR(form.get("amount"), currency);
     const category = form.get("category");
     const frequency = form.get("frequency");
     const startDate = form.get("startDate");
@@ -466,7 +469,7 @@ function Transactions() {
     if (!type) return toast.error("Please choose income or expense");
     if (!amountValue) return toast.error("Please enter an amount");
 
-    const amount = Number(amountValue);
+    const amount = toPKR(amountValue, currency);
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return toast.error("Amount must be greater than zero");
@@ -531,7 +534,7 @@ function Transactions() {
         if (projected > limit) {
           setBudgetWarning({
             category:
-              matchingBudget.budget.category?.name || "Selected category",
+              displayCategoryName(matchingBudget.budget.category?.name || "Selected category"),
             limit,
             spent: Math.max(0, alreadySpent),
             attempted: amount,
@@ -870,8 +873,8 @@ function Transactions() {
     (category) => category.type === "income"
   );
 
-  const expenseCategories = categories.filter(
-    (category) => category.type === "expense"
+  const expenseCategories = sortExpenseCategories(
+    categories.filter((category) => category.type === "expense")
   );
 
   return (
@@ -983,7 +986,7 @@ function Transactions() {
                     <td>
                       {new Date(transaction.date).toLocaleDateString()}
                     </td>
-                    <td>{transaction.category?.name || "—"}</td>
+                    <td>{displayCategoryName(transaction.category?.name || "—")}</td>
                     <td>{transaction.description || "—"}</td>
                     <td
                       className={
@@ -992,8 +995,8 @@ function Transactions() {
                           : "expense-amount"
                       }
                     >
-                      {transaction.type === "income" ? "+" : "-"} ₹
-                      {Number(transaction.amount || 0).toLocaleString("en-IN")}
+                        {transaction.type === "income" ? "+" : "-"}
+                        {formatCurrency(transaction.amount, currency)}
                     </td>
                     <td>
                       <div className="table-actions">
@@ -1034,7 +1037,7 @@ function Transactions() {
                   <td>
                     {new Date(transaction.date).toLocaleDateString()}
                   </td>
-                  <td>{transaction.category?.name || "—"}</td>
+                  <td>{displayCategoryName(transaction.category?.name || "—")}</td>
                   <td>{transaction.description || "—"}</td>
                   <td
                     className={
@@ -1043,8 +1046,8 @@ function Transactions() {
                         : "expense-amount"
                     }
                   >
-                    {transaction.type === "income" ? "+" : "-"} ₹
-                    {Number(transaction.amount || 0).toLocaleString("en-IN")}
+                        {transaction.type === "income" ? "+" : "-"}
+                        {formatCurrency(transaction.amount, currency)}
                   </td>
                   <td>
                     <div className="table-actions">
@@ -1149,15 +1152,16 @@ function Transactions() {
                   : expenseCategories
                 ).map((category) => (
                   <option key={category._id} value={category._id}>
-                    {category.name}
+                    {displayCategoryName(category.name)}
                   </option>
                 ))}
               </select>
 
               <input
+                key={`recurring-amount-${currency}`}
                 name="amount"
                 type="number"
-                placeholder="Amount"
+                placeholder={`Amount (${currency})`}
                 aria-label="Amount"
               />
 
@@ -1205,13 +1209,12 @@ function Transactions() {
                     <div className="recurring-info">
                       <strong>
                         {item.description ||
-                          item.category?.name ||
+                          displayCategoryName(item.category?.name || "") ||
                           "Recurring entry"}
                       </strong>
 
                       <span>
-                        {item.category?.name || "—"} · {item.frequency} · ₹
-                        {Number(item.amount || 0).toLocaleString("en-IN")} · next{" "}
+                        {displayCategoryName(item.category?.name || "—")} · {item.frequency} · {formatCurrency(item.amount, currency)} · next{" "}
                         {item.nextOccurrence
                           ? new Date(
                               item.nextOccurrence
@@ -1307,12 +1310,14 @@ function Transactions() {
               <div className="modal-field">
                 <label>Amount</label>
                 <input
+                  key={`transaction-amount-${currency}-${editingTransaction?._id || "new"}`}
                   name="amount"
                   type="number"
                   min="0.01"
                   step="any"
                   placeholder="Enter amount"
-                  defaultValue={editingTransaction?.amount ?? ""}
+                  defaultValue={editingTransaction ? fromPKR(editingTransaction.amount, currency) : ""}
+                  placeholder={`Enter amount (${currency})`}
                 />
               </div>
 
@@ -1368,7 +1373,7 @@ function Transactions() {
                   <optgroup label="Income">
                     {incomeCategories.map((category) => (
                       <option key={category._id} value={category._id}>
-                        {category.name}
+                        {displayCategoryName(category.name)}
                       </option>
                     ))}
                   </optgroup>
@@ -1376,7 +1381,7 @@ function Transactions() {
                   <optgroup label="Expense">
                     {expenseCategories.map((category) => (
                       <option key={category._id} value={category._id}>
-                        {category.name}
+                        {displayCategoryName(category.name)}
                       </option>
                     ))}
                   </optgroup>
@@ -1536,7 +1541,7 @@ function Transactions() {
                                   key={category._id}
                                   value={category._id}
                                 >
-                                  {category.name}
+                                  {displayCategoryName(category.name)}
                                 </option>
                               ))}
                             </select>
@@ -1642,38 +1647,38 @@ function Transactions() {
                 <div>
                   <span>Monthly budget</span>
                   <strong>
-                    ₹{budgetWarning.limit.toLocaleString("en-IN")}
+                    {formatCurrency(budgetWarning.limit, currency)}
                   </strong>
                 </div>
 
                 <div>
                   <span>Already spent</span>
                   <strong>
-                    ₹{budgetWarning.spent.toLocaleString("en-IN")}
+                    {formatCurrency(budgetWarning.spent, currency)}
                   </strong>
                 </div>
 
                 <div>
                   <span>New expense</span>
                   <strong>
-                    ₹{budgetWarning.attempted.toLocaleString("en-IN")}
+                    {formatCurrency(budgetWarning.attempted, currency)}
                   </strong>
                 </div>
 
                 <div className="budget-warning-total">
                   <span>Total after expense</span>
                   <strong>
-                    ₹{budgetWarning.projected.toLocaleString("en-IN")}
+                    {formatCurrency(budgetWarning.projected, currency)}
                   </strong>
                 </div>
 
                 <div className="budget-warning-excess">
                   <span>Budget exceeded by</span>
                   <strong>
-                    ₹
-                    {(
-                      budgetWarning.projected - budgetWarning.limit
-                    ).toLocaleString("en-IN")}
+                    {formatCurrency(
+                      budgetWarning.projected - budgetWarning.limit,
+                      currency
+                    )}
                   </strong>
                 </div>
               </div>

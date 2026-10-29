@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { CoinMark } from '../../components/common/Logo';
 import Navbar from '../../components/Navbar/Navbar';
+import { Footer } from '../../components/Footer/Footer';
+import { useCurrency } from '../../context/CurrencyContext';
 import campusFriendsImage from '../../assets/images/campus-friends.png';
 import './Home.css';
 
@@ -386,8 +388,8 @@ const Stats = ({ currency = 'PKR' }) => {
         {/* 4-Column Stat Grid with dividers */}
         <div className="stats-grid">
           {statsData.map((stat, idx) => (
-            <div 
-              key={stat.labelTop} 
+            <div
+              key={stat.labelTop}
               className={`stat-card ${idx !== statsData.length - 1 ? 'has-divider' : ''}`}
             >
               <div className="stat-number">{stat.value}</div>
@@ -435,7 +437,7 @@ const SecurityFeatures = () => {
                 No bank credentials, no third-party data aggregators. Every transaction is manually controlled by you with zero risk of exposure or unauthorized account access.
               </p>
             </div>
-            
+
             <div className="feature-graphic-container">
               <div className="abstract-glow-circle" />
               <div className="feature-badge-graphic">
@@ -471,9 +473,9 @@ const SecurityFeatures = () => {
             <div className="feature-matrix-container">
               <div className="security-matrix-grid">
                 {[...Array(16)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`matrix-dot ${i === 5 || i === 10 ? 'matrix-dot-lime' : ''} ${i === 6 ? 'matrix-dot-emerald' : ''}`} 
+                  <div
+                    key={i}
+                    className={`matrix-dot ${i === 5 || i === 10 ? 'matrix-dot-lime' : ''} ${i === 6 ? 'matrix-dot-emerald' : ''}`}
                   />
                 ))}
               </div>
@@ -521,20 +523,20 @@ const SecurityFeatures = () => {
               <span className="campus-name">NUCES</span>
             </div>
             <div className="campus-badge-item">
-              <span className="campus-abbr">LUMS</span>
-              <span className="campus-name">Lahore</span>
+              <span className="campus-abbr">LINCOLIN</span>
+              <span className="campus-name">MALAYSIA</span>
             </div>
             <div className="campus-badge-item">
               <span className="campus-abbr">IBA</span>
               <span className="campus-name">Karachi</span>
             </div>
             <div className="campus-badge-item">
-              <span className="campus-abbr">GIKI</span>
-              <span className="campus-name">Topi</span>
+              <span className="campus-abbr">MIDDLESEX</span>
+              <span className="campus-name">Dubai</span>
             </div>
             <div className="campus-badge-item">
-              <span className="campus-abbr">UET</span>
-              <span className="campus-name">Taxila & LHR</span>
+              <span className="campus-abbr">SZABIST</span>
+              <span className="campus-name">Karachi</span>
             </div>
           </div>
         </div>
@@ -814,30 +816,30 @@ const InteractiveCalculator = ({ currency = 'PKR' }) => {
 
               {/* Stacked Multi-Color Progress Bar */}
               <div className="distribution-stacked-bar">
-                <div 
-                  className="bar-slice slice-food" 
-                  style={{ width: `${allocations.food * 100}%` }} 
-                  title={`Food & Mess: ${Math.round(allocations.food * 100)}%`} 
+                <div
+                  className="bar-slice slice-food"
+                  style={{ width: `${allocations.food * 100}%` }}
+                  title={`Food & Mess: ${Math.round(allocations.food * 100)}%`}
                 />
-                <div 
-                  className="bar-slice slice-transit" 
-                  style={{ width: `${allocations.transit * 100}%` }} 
-                  title={`Transit: ${Math.round(allocations.transit * 100)}%`} 
+                <div
+                  className="bar-slice slice-transit"
+                  style={{ width: `${allocations.transit * 100}%` }}
+                  title={`Transit: ${Math.round(allocations.transit * 100)}%`}
                 />
-                <div 
-                  className="bar-slice slice-academic" 
-                  style={{ width: `${allocations.academic * 100}%` }} 
-                  title={`Academics: ${Math.round(allocations.academic * 100)}%`} 
+                <div
+                  className="bar-slice slice-academic"
+                  style={{ width: `${allocations.academic * 100}%` }}
+                  title={`Academics: ${Math.round(allocations.academic * 100)}%`}
                 />
-                <div 
-                  className="bar-slice slice-fun" 
-                  style={{ width: `${allocations.fun * 100}%` }} 
-                  title={`Campus Fun: ${Math.round(allocations.fun * 100)}%`} 
+                <div
+                  className="bar-slice slice-fun"
+                  style={{ width: `${allocations.fun * 100}%` }}
+                  title={`Campus Fun: ${Math.round(allocations.fun * 100)}%`}
                 />
-                <div 
-                  className="bar-slice slice-savings" 
-                  style={{ width: `${allocations.savings * 100}%` }} 
-                  title={`Savings Cushion: ${Math.round(allocations.savings * 100)}%`} 
+                <div
+                  className="bar-slice slice-savings"
+                  style={{ width: `${allocations.savings * 100}%` }}
+                  title={`Savings Cushion: ${Math.round(allocations.savings * 100)}%`}
                 />
               </div>
 
@@ -952,7 +954,7 @@ const SocietiesSection = ({ currency = 'PKR' }) => {
           <div className="club-ui-card card-hover-lift">
             <div className="club-card-label">ACTIVE EVENT LEDGER</div>
             <div className="club-project-name">ACM National Hackathon</div>
-            
+
             <div className="club-card-label" style={{ marginTop: '14px' }}>Allocated Categories</div>
             <div className="club-pills-row">
               <span className="club-category-pill pill-orange">Catering & Chai</span>
@@ -979,7 +981,7 @@ const SocietiesSection = ({ currency = 'PKR' }) => {
             <p className="api-card-desc">
               Generate transparent audit PDFs, CSV ledgers, and committee expense summaries with a single click.
             </p>
-            
+
             {/* Code Box */}
             <div className="api-code-terminal">
               <div className="terminal-dots">
@@ -1248,8 +1250,8 @@ const Testimonials = () => {
         {/* 3 Review Cards */}
         <div className="testimonials-grid">
           {reviews.map((rev) => (
-            <div 
-              key={rev.name} 
+            <div
+              key={rev.name}
               className={`testimonial-card card-hover-lift ${rev.highlight ? 'card-featured' : ''}`}
             >
               <div className="testimonial-header">
@@ -1338,8 +1340,8 @@ const Faq = () => {
             {faqs.map((faq, idx) => {
               const isOpen = openIndex === idx;
               return (
-                <div 
-                  key={faq.q} 
+                <div
+                  key={faq.q}
                   className={`faq-item ${isOpen ? 'is-open' : ''}`}
                 >
                   <button
@@ -1423,9 +1425,9 @@ const CtaBanner = () => {
   );
 };
 
-export const Home = ({ currency: initialCurrency = 'PKR' }) => {
+export const Home = () => {
   const homeRef = useRef(null);
-  const [currency, setCurrency] = useState(() => localStorage.getItem('currency') || initialCurrency);
+  const { currency, toggleCurrency } = useCurrency();
   const [theme, setTheme] = useState(() => {
     const preferences = JSON.parse(localStorage.getItem('student_preferences') || '{}');
     return preferences.darkMode ? 'dark' : 'light';
@@ -1498,29 +1500,28 @@ export const Home = ({ currency: initialCurrency = 'PKR' }) => {
   };
 
   return (
-    <main className="home-page" ref={homeRef}>
-      <Navbar
-        currency={currency}
-        onToggleCurrency={() => setCurrency((current) => {
-          const next = current === 'PKR' ? 'USD' : 'PKR';
-          localStorage.setItem('currency', next);
-          return next;
-        })}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
-      <Hero currency={currency} />
-      <CampusToolsSection />
-      <Stats currency={currency} />
-      <SecurityFeatures />
-      <ServicesBento currency={currency} />
-      <InteractiveCalculator currency={currency} />
-      <SocietiesSection currency={currency} />
-      <GrowthEarnSection currency={currency} />
-      <Testimonials />
-      <Faq />
-      <CtaBanner />
-    </main>
+    <>
+      <main className="home-page" ref={homeRef}>
+        <Navbar
+          currency={currency}
+          onToggleCurrency={toggleCurrency}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+        <Hero currency={currency} />
+        <CampusToolsSection />
+        <Stats currency={currency} />
+        <SecurityFeatures />
+        <ServicesBento currency={currency} />
+        <InteractiveCalculator currency={currency} />
+        <SocietiesSection currency={currency} />
+        <GrowthEarnSection currency={currency} />
+        <Testimonials />
+        <Faq />
+        <CtaBanner />
+      </main>
+      <Footer />
+    </>
   );
 };
 

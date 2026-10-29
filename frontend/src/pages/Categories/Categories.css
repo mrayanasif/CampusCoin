@@ -94,6 +94,13 @@
   margin-top: 32px;
 }
 
+.category-group-heading p {
+  margin: -12px 0 12px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .category-row {
   display: flex;
   padding: 14px 0;
@@ -106,6 +113,23 @@
   border-bottom: none;
 }
 
+.category-draggable-row {
+  cursor: grab;
+  transition: background-color 0.18s ease, opacity 0.18s ease;
+}
+
+.category-draggable-row:hover {
+  background-color: rgba(199, 243, 107, 0.12);
+}
+
+.category-draggable-row:active {
+  cursor: grabbing;
+}
+
+.category-draggable-row.is-dragging {
+  opacity: 0.42;
+}
+
 .category-name {
   display: flex;
   align-items: center;
@@ -114,6 +138,11 @@
   font-family: "Inter", sans-serif;
   font-size: 14px;
   font-weight: 500;
+}
+
+.category-drag-handle {
+  flex-shrink: 0;
+  color: #789b3d;
 }
 
 .category-name small {
@@ -169,6 +198,141 @@
   border-color: #dc2626;
 }
 
+.category-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(8, 15, 11, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+.category-modal {
+  width: min(100%, 460px);
+  padding: 24px;
+  color: var(--ink-primary, #0b0f0e);
+  background: var(--surface-card, #fff);
+  border: 1px solid var(--border-light, #e6e9e3);
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  animation: category-modal-enter 0.18s ease-out;
+}
+
+@keyframes category-modal-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.category-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.category-modal-header h2 {
+  margin: 0 0 6px;
+  color: var(--ink-primary, #0b0f0e);
+  font-family: "Archivo", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.category-modal-header p {
+  margin: 0;
+  color: var(--text-muted, #64748b);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.category-modal-close {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--text-muted, #64748b);
+  background: var(--surface-muted, #f2f4f0);
+  border: 1px solid var(--border-light, #e6e9e3);
+  border-radius: 9px;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.category-modal-close:hover:not(:disabled) {
+  color: var(--ink-primary, #0b0f0e);
+  border-color: #9cc83e;
+}
+
+.category-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.category-modal-actions button {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.category-modal-actions .category-modal-cancel {
+  color: #47751d;
+  background: var(--surface-card, #fff);
+  border: 1px solid #9cc83e;
+}
+
+.category-modal-actions .category-modal-cancel:hover:not(:disabled) {
+  background: #eaf7d2;
+}
+
+.category-modal .category-save {
+  width: auto;
+  min-width: 140px;
+  min-height: 42px;
+  padding: 0 16px;
+}
+
+.category-modal-actions .category-modal-delete {
+  color: #fff;
+  background: #dc2626;
+  border: 1px solid #dc2626;
+}
+
+.category-modal-actions .category-modal-delete:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.category-modal-actions button:disabled,
+.category-modal-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+body.dark-mode .category-modal-actions .category-modal-cancel {
+  color: #c7f36b;
+  background: #16201d;
+  border-color: #668b32;
+}
+
+body.dark-mode .category-modal-actions .category-modal-cancel:hover:not(:disabled) {
+  color: #0b0f0e;
+  background: #c7f36b;
+  border-color: #c7f36b;
+}
+
 @media (max-width: 800px) {
   .category-layout {
     grid-template-columns: 1fr;
@@ -184,6 +348,10 @@ body.dark-mode .category-list-panel {
 body.dark-mode .category-form-panel h2,
 body.dark-mode .category-group h2 {
   color: #f3f4f6;
+}
+
+body.dark-mode .category-group-heading p {
+  color: #a3a3a3;
 }
 
 body.dark-mode .category-field label {
@@ -207,6 +375,14 @@ body.dark-mode .category-row {
 
 body.dark-mode .category-name {
   color: #f3f4f6;
+}
+
+body.dark-mode .category-drag-handle {
+  color: #c7f36b;
+}
+
+body.dark-mode .category-draggable-row:hover {
+  background-color: rgba(199, 243, 107, 0.08);
 }
 
 body.dark-mode .category-name small {

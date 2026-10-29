@@ -1,6 +1,7 @@
 .report-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .report-actions button {
@@ -8,10 +9,10 @@
   padding: 8px 13px;
   align-items: center;
   gap: 6px;
-  color: var(--primary);
-  background-color: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  color: var(--ink-primary);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: 9px;
   font-size: 0.72rem;
   font-family: inherit;
   font-weight: 600;
@@ -20,8 +21,8 @@
 }
 
 .report-actions button:hover:not(:disabled) {
-  background-color: var(--primary-light);
-  border-color: var(--primary);
+  background-color: var(--brand-lime-light);
+  border-color: var(--brand-lime);
 }
 
 .report-actions button:disabled {
@@ -36,18 +37,19 @@
   flex-wrap: wrap;
   align-items: center;
   padding: 14px;
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  min-width: 0;
 }
 
 .report-filters select {
   height: 38px;
   padding: 0 12px;
-  color: var(--text-dark);
-  background-color: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  color: var(--ink-primary);
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: 9px;
   font-size: 0.78rem;
   font-family: inherit;
   font-weight: 500;
@@ -58,7 +60,7 @@
 }
 
 .report-filters select:focus {
-  border-color: var(--primary);
+  border-color: var(--brand-lime);
 }
 
 .report-reset-btn {
@@ -83,7 +85,9 @@
 }
 
 .report-export-area {
-  background-color: var(--background);
+  width: 100%;
+  min-width: 0;
+  background-color: transparent;
   padding: 0;
 }
 
@@ -93,16 +97,17 @@
 
 .report-summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 18px;
   gap: 15px;
 }
 
 .report-summary div,
 .report-card {
-  background-color: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
 }
 
 .report-summary div {
@@ -122,23 +127,25 @@
 .report-summary strong {
   margin-top: 6px;
   font-size: 1.1rem;
-  color: var(--text-dark);
+  color: var(--ink-primary);
 }
 
 .report-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 18px;
 }
 
 .report-card {
   padding: 18px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .report-card h3 {
   margin: 0 0 3px;
   font-size: 0.9rem;
-  color: var(--text-dark);
+  color: var(--ink-primary);
 }
 
 .report-card p {
@@ -149,15 +156,43 @@
 
 .report-chart {
   height: 260px;
+  width: 100%;
+  min-width: 0;
   margin-top: 15px;
   font-size: 0.65rem;
+}
+
+.report-pie-total {
+  fill: var(--ink-primary);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.report-pie-caption {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+
+.report-pie-legend-label {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--ink-primary);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.reports-page {
+  width: 100%;
+  min-width: 0;
 }
 
 .full-report {
   grid-column: 1 / -1;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 1050px) {
   .report-grid {
     grid-template-columns: 1fr;
   }
@@ -193,34 +228,34 @@
 
 
 body.dark-mode .report-actions button {
-  background-color: #22252a;
-  color: #f3b8ca;
-  border-color: #4b4f57;
+  background-color: var(--surface-card);
+  color: var(--ink-primary);
+  border-color: var(--border-light);
 }
 
 body.dark-mode .report-actions button:hover:not(:disabled) {
-  background-color: #2f3238;
-  border-color: #f3b8ca;
+  background-color: var(--surface-muted);
+  border-color: var(--brand-lime);
 }
 
 body.dark-mode .report-filters {
-  background: #22252a;
-  border-color: #363a41;
+  background: var(--surface-card);
+  border-color: var(--border-light);
 }
 
 body.dark-mode .report-filters select {
-  background-color: #292c31;
-  color: #f3f4f6;
-  border-color: #4b4f57;
+  background-color: var(--surface-offwhite);
+  color: var(--ink-primary);
+  border-color: var(--border-light);
 }
 
 body.dark-mode .report-filters select option {
-  background-color: #292c31;
-  color: #f3f4f6;
+  background-color: var(--surface-offwhite);
+  color: var(--ink-primary);
 }
 
 body.dark-mode .report-filters select:focus {
-  border-color: #f3b8ca;
+  border-color: var(--brand-lime);
 }
 
 body.dark-mode .report-reset-btn {
@@ -234,20 +269,20 @@ body.dark-mode .report-reset-btn:hover {
 
 body.dark-mode .report-summary div,
 body.dark-mode .report-card {
-  background-color: #22252a;
-  border-color: #363a41;
+  background-color: var(--surface-card);
+  border-color: var(--border-light);
 }
 
 body.dark-mode .report-summary span {
-  color: #b1b5bd;
+  color: var(--text-muted);
 }
 
 body.dark-mode .report-summary strong {
-  color: #f3f4f6;
+  color: var(--ink-primary);
 }
 
 body.dark-mode .report-card h3 {
-  color: #f3f4f6;
+  color: var(--ink-primary);
 }
 
 body.dark-mode .report-card p {
@@ -255,16 +290,16 @@ body.dark-mode .report-card p {
 }
 
 body.dark-mode .recharts-cartesian-grid line {
-  stroke: #363a41 !important;
+  stroke: var(--border-light) !important;
 }
 
 body.dark-mode .recharts-text,
 body.dark-mode .recharts-cartesian-axis-tick-value {
-  fill: #b1b5bd !important;
+  fill: var(--text-muted) !important;
 }
 
 body.dark-mode .recharts-legend-item-text {
-  color: #b1b5bd !important;
+  color: var(--text-muted) !important;
 }
 /* Custom date range fields */
 .report-date-field {
@@ -298,16 +333,16 @@ body.dark-mode .recharts-legend-item-text {
 }
 
 body.dark-mode .report-date-field {
-  background: #22252a;
-  border-color: #363a41;
-  color: #b1b5bd;
+  background: var(--surface-card);
+  border-color: var(--border-light);
+  color: var(--text-muted);
 }
 
 body.dark-mode .report-date-field input {
-  color: #f3f4f6;
+  color: var(--ink-primary);
   color-scheme: dark;
 }
 
 body.dark-mode .report-date-field input:focus {
-  background: rgba(199, 243, 107, 0.15);
+  background: var(--brand-lime-light);
 }

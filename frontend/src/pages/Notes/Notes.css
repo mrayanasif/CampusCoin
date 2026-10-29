@@ -89,9 +89,9 @@
   justify-content: center;
   gap: 6px;
   padding: 10px 18px;
-  color: #ffffff;
-  background-color: var(--primary);
-  border: none;
+  color: var(--btn-primary-text);
+  background-color: var(--btn-primary-bg);
+  border: 1px solid var(--btn-primary-border);
   border-radius: 8px;
   font-size: 0.78rem;
   font-weight: 600;
@@ -101,7 +101,13 @@
 }
 
 .notes-save:hover:not(:disabled) {
-  background-color: var(--brand-lime-hover);
+  background-color: var(--btn-primary-hover);
+  border-color: var(--btn-primary-hover);
+}
+
+.notes-save:focus-visible {
+  outline: 3px solid var(--brand-lime);
+  outline-offset: 2px;
 }
 
 .notes-save:disabled {

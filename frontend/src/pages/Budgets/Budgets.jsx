@@ -4,9 +4,12 @@ import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
+import { formatCurrency, toPKR, useCurrency } from "../../context/CurrencyContext";
+import { displayCategoryName, sortExpenseCategories } from "../../utils/categoryPresentation";
 import "./Budgets.css";
 
 function Budgets() {
+  const { currency } = useCurrency();
   const navigate = useNavigate();
   const [budgets, setBudgets] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -37,7 +40,7 @@ function Budgets() {
   const fetchCategories = async () => {
     try {
       const res = await API.get("/categories/type/expense");
-      setCategories(res.data.categories || []);
+      setCategories(sortExpenseCategories(res.data.categories || []));
     } catch (error) {
       console.error(error);
     }
@@ -49,7 +52,7 @@ function Budgets() {
 
     const category = form.get("category");
     const limitValue = form.get("limit");
-    const limit = Number(limitValue);
+    const limit = toPKR(limitValue, currency);
 
     if (!category) return toast.error("Please choose a category");
     if (!limitValue) return toast.error("Please enter a monthly limit");
@@ -115,7 +118,7 @@ function Budgets() {
             ))}
           </select>
 
-          <input name="limit" type="number" placeholder="Monthly limit" />
+          <input name="limit" type="number" step="any" placeholder={`Monthly limit (${currency})`} />
 
           <button type="submit">Save Budget</button>
         </form>
@@ -147,10 +150,10 @@ function Budgets() {
 
             return (
               <div className="budget-row" key={b._id}>
-                <strong>{b.category?.name || "—"}</strong>
+                <strong>{displayCategoryName(b.category?.name || "—")}</strong>
 
                 <span>
-                  ₹{item.used.toLocaleString()} / ₹{b.limitAmount.toLocaleString()}
+                  {formatCurrency(item.used, currency)} / {formatCurrency(b.limitAmount, currency)}
                 </span>
 
                 <div className="budget-progress">
@@ -199,7 +202,7 @@ function Budgets() {
         <div className="budget-alert">
           <AlertTriangle size={18} />
           <span>
-            {overBudget.budget?.category?.name} has exceeded its monthly budget.
+            {displayCategoryName(overBudget.budget?.category?.name || "Category")} has exceeded its monthly budget.
           </span>
         </div>
       )}

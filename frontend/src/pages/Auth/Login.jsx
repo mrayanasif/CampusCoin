@@ -4,6 +4,7 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 
 import Navbar from "../../components/Navbar/Navbar";
+import { useCurrency } from "../../context/CurrencyContext";
 import API from "../../api/axios";
 import "./Auth.css";
 
@@ -11,19 +12,11 @@ function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [currency, setCurrency] = useState(() => localStorage.getItem("currency") || "PKR");
+  const { currency, toggleCurrency } = useCurrency();
   const [theme, setTheme] = useState(() => {
     const preferences = JSON.parse(localStorage.getItem("student_preferences") || "{}");
     return preferences.darkMode ? "dark" : "light";
   });
-
-  const toggleCurrency = () => {
-    setCurrency((current) => {
-      const next = current === "PKR" ? "USD" : "PKR";
-      localStorage.setItem("currency", next);
-      return next;
-    });
-  };
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -57,6 +50,7 @@ function Login() {
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
+      window.dispatchEvent(new Event("campuscoin:auth-changed"));
 
       toast.success(`Welcome back, ${user.name}!`);
 

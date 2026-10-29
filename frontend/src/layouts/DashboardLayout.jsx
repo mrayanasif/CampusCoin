@@ -5,6 +5,7 @@ import { Bell, Menu } from "lucide-react";
 import Sidebar from "../components/Sidebar/Sidebar";
 import Breadcrumbs from "../components/Breadcrumbs/Breadcrumbs";
 import API from "../api/axios";
+import { useCurrency } from "../context/CurrencyContext";
 import "./DashboardLayout.css";
 
 function readStoredUser() {
@@ -33,6 +34,7 @@ function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState(readStoredUser);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { currency, toggleCurrency } = useCurrency();
 
   useEffect(() => {
     setUser(readStoredUser());
@@ -101,6 +103,15 @@ function DashboardLayout() {
           </div>
 
           <div className="dashboard-header-right">
+            <button
+              type="button"
+              className="dashboard-currency-toggle"
+              onClick={toggleCurrency}
+              title="Toggle display currency (PKR / USD)"
+              aria-label={`Switch currency to ${currency === "PKR" ? "USD" : "PKR"}`}
+            >
+              {currency === "PKR" ? "PKR ₨" : "USD $"}
+            </button>
             <button
               type="button"
               className="notification-button"

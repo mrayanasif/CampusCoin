@@ -1,7 +1,7 @@
 import React from 'react';
 import './Footer.css';
-import { Logo } from '../../common/Logo';
-import { Icon } from '../../common/Icons';
+import { Logo } from '../common/Logo';
+import { Icon } from '../common/Icons';
 
 export const Footer = () => {
   return (
@@ -59,7 +59,7 @@ export const Footer = () => {
               </li>
               <li className="footer-contact-item">
                 <Icon name="mapPin" size={15} />
-                <span>Islamabad • Lahore • Karachi University Network</span>
+                <span> DHA Campus, Karachi</span>
               </li>
             </ul>
           </div>

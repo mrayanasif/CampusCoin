@@ -4,6 +4,8 @@ import { Loader2, NotebookPen, Pencil, Plus, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
+import { formatCurrency, useCurrency } from "../../context/CurrencyContext";
+import { displayCategoryName } from "../../utils/categoryPresentation";
 import "./Notes.css";
 
 const TYPE_LABELS = {
@@ -21,15 +23,15 @@ function formatDate(value) {
   });
 }
 
-function referenceLabel(refType, item) {
+function referenceLabel(refType, item, currency) {
   if (!item) return "Removed item";
 
   if (refType === "transaction") {
-    const category = item.category?.name || "Uncategorized";
+    const category = displayCategoryName(item.category?.name || "Uncategorized");
     const description = item.description?.trim();
     return `${formatDate(item.date)} · ${category}${
       description ? ` · ${description}` : ""
-    } · ₹${Number(item.amount || 0).toLocaleString()}`;
+    } · ${formatCurrency(item.amount, currency)}`;
   }
 
   if (refType === "saving_tip") {
@@ -47,6 +49,7 @@ function referenceLabel(refType, item) {
 
 function Notes() {
   const navigate = useNavigate();
+  const { currency } = useCurrency();
   const [notes, setNotes] = useState([]);
   const [references, setReferences] = useState({
     transaction: [],
@@ -231,7 +234,7 @@ function Notes() {
                     <option value="">Choose an item</option>
                     {referenceOptions.map((item) => (
                       <option key={item._id} value={item._id}>
-                        {referenceLabel(type, item)}
+                        {referenceLabel(type, item, currency)}
                       </option>
                     ))}
                   </select>
@@ -250,7 +253,7 @@ function Notes() {
                 <label>Attached to</label>
                 <p className="notes-editing-reference">
                   {TYPE_LABELS[type] || type}:{" "}
-                  {referenceLabel(type, findReference(type, referenceId))}
+                  {referenceLabel(type, findReference(type, referenceId), currency)}
                 </p>
               </div>
             )}
@@ -342,7 +345,7 @@ function Notes() {
 
                     <div className="note-card-foot">
                       <span className="note-reference">
-                        {referenceLabel(note.referenceType, item)}
+                        {referenceLabel(note.referenceType, item, currency)}
                       </span>
 
                       <div className="note-actions">

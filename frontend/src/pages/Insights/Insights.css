@@ -310,6 +310,22 @@ body.dark-mode .insight-advice span {
   color: #587D20;
 }
 
+.insight-download-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  color: #15803d;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.insight-download-btn:hover {
+  color: #14532d;
+}
+
 .insight-delete-btn {
   display: flex;
   align-items: center;
@@ -378,6 +394,14 @@ body.dark-mode .insights-empty-text {
 
 body.dark-mode .insight-save-btn {
   color: #C7F36B;
+}
+
+body.dark-mode .insight-download-btn {
+  color: #C7F36B;
+}
+
+body.dark-mode .insight-download-btn:hover {
+  color: #aee34c;
 }
 
 body.dark-mode .insight-delete-btn {

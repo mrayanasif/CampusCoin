@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
+import { fromPKR, toPKR, useCurrency } from "../../context/CurrencyContext";
 import "./Profile.css";
 
 function Profile() {
   const navigate = useNavigate();
+  const { currency } = useCurrency();
   const readPreferences = () => {
     try {
       return JSON.parse(localStorage.getItem("student_preferences") || "{}");
@@ -18,6 +20,9 @@ function Profile() {
   const [saving, setSaving] = useState(false);
   const [darkMode, setDarkMode] = useState(() => Boolean(readPreferences().darkMode));
   const [fontSize, setFontSize] = useState(() => readPreferences().fontSize || "normal");
+  const [hasStoredPreferences] = useState(
+    () => localStorage.getItem("student_preferences") !== null
+  );
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -71,7 +76,7 @@ function Profile() {
 
       // Accessibility preferences are persisted on the user record; hydrate
       // them (and sync localStorage) so they follow the student across devices.
-      if (user.preferences) {
+      if (user.preferences && !hasStoredPreferences) {
         setDarkMode(Boolean(user.preferences.darkMode));
         setFontSize(user.preferences.fontSize || "normal");
       }
@@ -112,8 +117,8 @@ function Profile() {
       const profileResponse = await API.put("/users/profile", {
         name,
         academicYear: academicYearMap[academicYear] || academicYear,
-        monthlyAllowance: Number(allowanceValue) || 0,
-        savingsGoal: Number(savingsValue) || 0,
+        monthlyAllowance: toPKR(allowanceValue, currency),
+        savingsGoal: toPKR(savingsValue, currency),
       });
 
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -125,8 +130,8 @@ function Profile() {
           ...updatedUser,
           name,
           academicYear: academicYearMap[academicYear],
-          monthlyAllowance: Number(allowanceValue) || 0,
-          savingsGoal: Number(savingsValue) || 0,
+          monthlyAllowance: toPKR(allowanceValue, currency),
+          savingsGoal: toPKR(savingsValue, currency),
         })
       );
 
@@ -187,20 +192,26 @@ function Profile() {
             </div>
 
             <div className="profile-field">
-              <label>Monthly allowance</label>
+              <label>Monthly allowance ({currency})</label>
               <input
+                key={`allowance-${currency}`}
                 name="allowance"
                 type="number"
-                defaultValue={formData.monthlyAllowance}
+                defaultValue={fromPKR(formData.monthlyAllowance, currency)}
+                step="any"
+                aria-label={`Monthly allowance in ${currency}`}
               />
             </div>
 
             <div className="profile-field">
-              <label>Monthly savings goal</label>
+              <label>Monthly savings goal ({currency})</label>
               <input
+                key={`savings-goal-${currency}`}
                 name="savingsGoal"
                 type="number"
-                defaultValue={formData.savingsGoal}
+                defaultValue={fromPKR(formData.savingsGoal, currency)}
+                step="any"
+                aria-label={`Monthly savings goal in ${currency}`}
               />
             </div>
           </div>

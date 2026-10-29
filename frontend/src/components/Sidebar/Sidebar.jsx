@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import {
   ArrowLeftRight,
   ChartNoAxesColumnIncreasing,
+  Globe2,
   LayoutDashboard,
   Lightbulb,
   LogOut,
@@ -42,6 +43,7 @@ function Sidebar({ isOpen, closeSidebar }) {
     }
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    window.dispatchEvent(new Event("campuscoin:auth-changed"));
     document.body.classList.remove("dark-mode");
     toast.success("Logged out");
     setTimeout(() => navigate("/login"), 400);
@@ -87,6 +89,14 @@ function Sidebar({ isOpen, closeSidebar }) {
         </nav>
 
         <div className="sidebar-footer">
+          <Link
+            to="/"
+            className="sidebar-website"
+            onClick={closeSidebar}
+          >
+            <Globe2 size={18} />
+            <span>Visit Website</span>
+          </Link>
           <button
             type="button"
             className="sidebar-logout"

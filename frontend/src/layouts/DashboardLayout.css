@@ -50,6 +50,21 @@
   letter-spacing: -0.2px;
 }
 
+.dashboard-currency-toggle {
+  border: 1px solid #dfe7d3;
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: #f7fbea;
+  color: #35521d;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboard-currency-toggle:hover {
+  background: #eaf5d6;
+}
+
 .menu-button,
 .notification-button {
   display: flex;
@@ -210,4 +225,132 @@ body.dark-mode .menu-button,
 body.dark-mode .notification-button { color: var(--ink-primary); }
 body.dark-mode .menu-button:hover,
 body.dark-mode .notification-button:hover { color: var(--ink-primary); background-color: var(--surface-muted); }
+
+/* Student dashboard pages share the Campus Coin green action palette. */
+.dashboard-layout .dashboard-content .primary-action,
+.dashboard-layout .dashboard-content .primary-button,
+.dashboard-layout .dashboard-content .budget-add-button,
+.dashboard-layout .dashboard-content .budget-form button,
+.dashboard-layout .dashboard-content .budget-modal-button,
+.dashboard-layout .dashboard-content .category-save,
+.dashboard-layout .dashboard-content .insights-generate-btn,
+.dashboard-layout .dashboard-content .insight-save-btn,
+.dashboard-layout .dashboard-content .notes-save,
+.dashboard-layout .dashboard-content .profile-save,
+.dashboard-layout .dashboard-content .report-actions button {
+  color: #0b0f0e !important;
+  background: #c7f36b !important;
+  border-color: #c7f36b !important;
+}
+
+.dashboard-layout .dashboard-content .primary-action:hover:not(:disabled),
+.dashboard-layout .dashboard-content .primary-button:hover:not(:disabled),
+.dashboard-layout .dashboard-content .budget-add-button:hover:not(:disabled),
+.dashboard-layout .dashboard-content .budget-form button:hover:not(:disabled),
+.dashboard-layout .dashboard-content .budget-modal-button:hover:not(:disabled),
+.dashboard-layout .dashboard-content .category-save:hover:not(:disabled),
+.dashboard-layout .dashboard-content .insights-generate-btn:hover:not(:disabled),
+.dashboard-layout .dashboard-content .insight-save-btn:hover:not(:disabled),
+.dashboard-layout .dashboard-content .notes-save:hover:not(:disabled),
+.dashboard-layout .dashboard-content .profile-save:hover:not(:disabled),
+.dashboard-layout .dashboard-content .report-actions button:hover:not(:disabled) {
+  color: #0b0f0e !important;
+  background: #aee34c !important;
+  border-color: #aee34c !important;
+}
+
+.dashboard-layout .dashboard-content .outline-action,
+.dashboard-layout .dashboard-content .secondary-button,
+.dashboard-layout .dashboard-content .report-reset-btn,
+.dashboard-layout .dashboard-content .notes-cancel,
+.dashboard-layout .dashboard-content .notif-secondary-btn,
+.dashboard-layout .dashboard-content .budget-alert-button,
+.dashboard-layout .dashboard-content .load-more-btn {
+  color: #47751d !important;
+  background: var(--surface-card) !important;
+  border-color: #9cc83e !important;
+}
+
+.dashboard-layout .dashboard-content .outline-action:hover,
+.dashboard-layout .dashboard-content .secondary-button:hover,
+.dashboard-layout .dashboard-content .report-reset-btn:hover,
+.dashboard-layout .dashboard-content .notes-cancel:hover,
+.dashboard-layout .dashboard-content .notif-secondary-btn:hover,
+.dashboard-layout .dashboard-content .budget-alert-button:hover,
+.dashboard-layout .dashboard-content .load-more-btn:hover {
+  color: #0b0f0e !important;
+  background: #eaf7d2 !important;
+  border-color: #84b82e !important;
+}
+
+body.dark-mode .dashboard-layout .dashboard-content .outline-action,
+body.dark-mode .dashboard-layout .dashboard-content .secondary-button,
+body.dark-mode .dashboard-layout .dashboard-content .report-reset-btn,
+body.dark-mode .dashboard-layout .dashboard-content .notes-cancel,
+body.dark-mode .dashboard-layout .dashboard-content .notif-secondary-btn,
+body.dark-mode .dashboard-layout .dashboard-content .budget-alert-button,
+body.dark-mode .dashboard-layout .dashboard-content .load-more-btn {
+  color: #c7f36b !important;
+  background: #16201d !important;
+  border-color: #668b32 !important;
+}
+
+body.dark-mode .dashboard-layout .dashboard-content .outline-action:hover,
+body.dark-mode .dashboard-layout .dashboard-content .secondary-button:hover,
+body.dark-mode .dashboard-layout .dashboard-content .report-reset-btn:hover,
+body.dark-mode .dashboard-layout .dashboard-content .notes-cancel:hover,
+body.dark-mode .dashboard-layout .dashboard-content .notif-secondary-btn:hover,
+body.dark-mode .dashboard-layout .dashboard-content .budget-alert-button:hover,
+body.dark-mode .dashboard-layout .dashboard-content .load-more-btn:hover {
+  color: #0b0f0e !important;
+  background: #c7f36b !important;
+  border-color: #c7f36b !important;
+}
+
+.dashboard-layout .dashboard-content .transaction-tabs button.active,
+.dashboard-layout .dashboard-content .insight-filters button.active,
+.dashboard-layout .dashboard-content .saving-tips-filters button.active,
+.dashboard-layout .dashboard-content .notes-filters button.active,
+.dashboard-layout .dashboard-content .notif-filters button.active,
+.dashboard-layout .dashboard-content .font-options button.active {
+  color: #0b0f0e !important;
+  background: #c7f36b !important;
+  border-color: #c7f36b !important;
+}
+
+.dashboard-layout .dashboard-content .transaction-tabs button:hover,
+.dashboard-layout .dashboard-content .insight-filters button:hover,
+.dashboard-layout .dashboard-content .saving-tips-filters button:hover,
+.dashboard-layout .dashboard-content .notes-filters button:hover,
+.dashboard-layout .dashboard-content .notif-filters button:hover,
+.dashboard-layout .dashboard-content .tip-card-actions button:hover,
+.dashboard-layout .dashboard-content .table-actions button:not(.delete-button):hover,
+.dashboard-layout .dashboard-content .recurring-actions button:not(.delete-button):hover,
+.dashboard-layout .dashboard-content .category-actions button:not(.category-delete):hover,
+.dashboard-layout .dashboard-content .note-actions button:not(.note-delete):hover {
+  color: #47751d !important;
+  background: #eaf7d2 !important;
+  border-color: #9cc83e !important;
+}
+
+.dashboard-layout .dashboard-content .tip-card-actions button,
+.dashboard-layout .dashboard-content .table-actions button:not(.delete-button),
+.dashboard-layout .dashboard-content .recurring-actions button:not(.delete-button),
+.dashboard-layout .dashboard-content .category-actions button:not(.category-delete),
+.dashboard-layout .dashboard-content .note-actions button:not(.note-delete),
+.dashboard-layout .dashboard-content .insight-save-btn {
+  color: #54851f;
+  border-color: #b4d77a;
+}
+
+body.dark-mode .dashboard-layout .dashboard-content .transaction-tabs button.active,
+body.dark-mode .dashboard-layout .dashboard-content .insight-filters button.active,
+body.dark-mode .dashboard-layout .dashboard-content .saving-tips-filters button.active,
+body.dark-mode .dashboard-layout .dashboard-content .notes-filters button.active,
+body.dark-mode .dashboard-layout .dashboard-content .notif-filters button.active,
+body.dark-mode .dashboard-layout .dashboard-content .font-options button.active {
+  color: #0b0f0e !important;
+  background: #c7f36b !important;
+  border-color: #c7f36b !important;
+}
 body.dark-mode .profile-avatar { color: #0b0f0e; background-color: var(--brand-lime); border-color: var(--brand-lime); }
