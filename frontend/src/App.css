@@ -1,0 +1,358 @@
+/* ==========================================================================
+   Campus Coin — Global Design System & Tokens
+   Editorial Fintech Minimalism with Motion-led Storytelling
+   ========================================================================== */
+
+:root {
+  /* Brand Tokens */
+  --brand-lime: #C7F36B;
+  --brand-lime-hover: #b4e850;
+  --brand-lime-light: #F4FDE5;
+
+
+  /* Neutrals & Surfaces */
+  --ink-primary: #0B0F0E;
+
+  --surface-bg: #FFFFFF;
+  --surface-offwhite: #F9FAF7;
+  --surface-muted: #F2F4F0;
+  --surface-card: #FFFFFF;
+  --surface-card-hover: #F8FAF6;
+  
+  /* Text Tones */
+  --text-main: #0B0F0E;
+  --text-muted: #64748B;
+  --text-subtle: #94A3B8;
+
+
+  /* Borders & Dividers */
+  --border-light: #E6E9E3;
+  --border-subtle: #EFF1ED;
+  --border-dark: #232C29;
+
+  /* UI Component Surfaces */
+  --navbar-bg: rgba(255, 255, 255, 0.92);
+  --mobile-menu-bg: rgba(255, 255, 255, 0.98);
+  --glass-bg: rgba(255, 255, 255, 0.82);
+
+  --slider-track: #E2E8F0;
+
+  /* Button Tokens */
+  --btn-primary-bg: #0B0F0E;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-border: #0B0F0E;
+  --btn-primary-hover: #1E2724;
+  --btn-secondary-bg: #FFFFFF;
+  --btn-secondary-text: #0B0F0E;
+  --btn-secondary-border: #E6E9E3;
+  --btn-secondary-hover: #F9FAF7;
+
+  /* Pill badge tokens */
+  --pill-lime-text: #2D4A13;
+  --pill-lime-border: rgba(199, 243, 107, 0.6);
+
+  /* Semantics */
+  --status-emerald: #10B981;
+  --status-emerald-bg: #ECFDF5;
+
+
+  /* Typography */
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 14px -2px rgba(11, 15, 14, 0.08), 0 2px 6px -1px rgba(11, 15, 14, 0.04);
+  --shadow-lg: 0 12px 28px -4px rgba(11, 15, 14, 0.1), 0 4px 12px -2px rgba(11, 15, 14, 0.05);
+  --shadow-xl: 0 24px 48px -12px rgba(11, 15, 14, 0.18);
+  --shadow-phone: 0 35px 80px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
+
+  /* Transitions */
+  --transition-fast: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  --theme-transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+[data-theme="dark"] {
+  /* Brand Tokens */
+  --brand-lime: #C7F36B;
+  --brand-lime-hover: #b8ec52;
+  --brand-lime-light: rgba(199, 243, 107, 0.12);
+
+
+  /* Dark Cockpit Neutrals & Surfaces */
+  --ink-primary: #F9FAF7;
+
+  --surface-bg: #0A0E0D;
+  --surface-offwhite: #111715;
+  --surface-muted: #16201D;
+  --surface-card: #131B18;
+  --surface-card-hover: #192420;
+
+  /* Text Tones */
+  --text-main: #F1F5F9;
+  --text-muted: #94A3B8;
+  --text-subtle: #64748B;
+
+
+  /* Borders & Dividers */
+  --border-light: #202D28;
+  --border-subtle: #18231F;
+  --border-dark: #2E3E37;
+
+  /* UI Component Surfaces */
+  --navbar-bg: rgba(10, 14, 13, 0.88);
+  --mobile-menu-bg: rgba(14, 20, 18, 0.98);
+  --glass-bg: rgba(19, 27, 24, 0.85);
+
+  --slider-track: #202D28;
+
+  /* Button Tokens */
+  --btn-primary-bg: #C7F36B;
+  --btn-primary-text: #0B0F0E;
+  --btn-primary-border: #C7F36B;
+  --btn-primary-hover: #b4e850;
+  --btn-secondary-bg: #141C19;
+  --btn-secondary-text: #F9FAF7;
+  --btn-secondary-border: #23312B;
+  --btn-secondary-hover: #1B2622;
+
+  /* Pill badge tokens */
+  --pill-lime-text: #C7F36B;
+  --pill-lime-border: rgba(199, 243, 107, 0.35);
+
+  /* Semantics */
+  --status-emerald: #34D399;
+  --status-emerald-bg: rgba(16, 185, 129, 0.15);
+
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.6), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.7);
+  --shadow-phone: 0 35px 80px -15px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Base Reset & Smooth Scroll */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-body);
+  font-feature-settings: "cv11", "ss01";
+  background-color: var(--surface-bg);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-color: var(--surface-bg);
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+::selection {
+  background-color: var(--ink-primary);
+  color: var(--brand-lime);
+}
+
+/* Typography Helpers */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--ink-primary);
+  line-height: 1.15;
+}
+
+p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Utility Containers */
+.container {
+  width: 100%;
+  max-width: 1240px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  padding: 12px 24px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  text-decoration: none;
+  border: 1px solid transparent;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-border);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary:hover {
+  background-color: var(--btn-primary-hover);
+  border-color: var(--btn-primary-hover);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border-color: var(--btn-secondary-border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--btn-secondary-hover);
+  border-color: var(--border-light);
+  transform: translateY(-1px);
+}
+
+.btn-lime {
+  background-color: var(--brand-lime);
+  color: #0B0F0E;
+  font-weight: 600;
+  border-color: var(--brand-lime);
+  box-shadow: 0 4px 16px rgba(199, 243, 107, 0.35);
+}
+
+.btn-lime:hover {
+  background-color: var(--brand-lime-hover);
+  border-color: var(--brand-lime-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(199, 243, 107, 0.5);
+}
+
+.btn-sm {
+  padding: 8px 18px;
+  font-size: 13.5px;
+}
+
+.btn-lg {
+  padding: 15px 32px;
+  font-size: 16px;
+}
+
+/* Badge Pills */
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.pill-badge-lime {
+  background-color: var(--brand-lime-light);
+  color: var(--pill-lime-text);
+  border: 1px solid var(--pill-lime-border);
+}
+
+.pill-badge-emerald {
+  background-color: var(--status-emerald-bg);
+  color: var(--status-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+
+/* Glassmorphism helpers */
+
+/* Clean Scrollbar */
+
+/* Animations */
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulseLime {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(199, 243, 107, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(199, 243, 107, 0);
+  }
+}
+
+.animate-pulse-lime {
+  animation: pulseLime 2.5s infinite;
+}
+
+.animate-float {
+  animation: floatGentle 4s ease-in-out infinite;
+}
+
+/* Card Lift */
+.card-hover-lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+.card-hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Input range slider custom styling for interactive simulator */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--slider-track);
+  border-radius: 9999px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ink-primary);
+  border: 3px solid var(--brand-lime);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}

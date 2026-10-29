@@ -1,0 +1,758 @@
+
+/* =========================================
+   BUDGET PAGE
+========================================= */
+
+.budgets-page {
+  width: 100%;
+  min-width: 0;
+}
+
+/* =========================================
+   SET BUDGET BUTTON
+========================================= */
+
+.budget-add-button {
+  display: inline-flex;
+  padding: 11px 20px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #0a0a0a;
+  background-color: #C7F36B;
+  border: 1px solid #C7F36B;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budget-add-button:hover {
+  background-color: #648D22;
+  border-color: #648D22;
+}
+
+/* =========================================
+   BUDGET FORM
+========================================= */
+
+.budget-form {
+  display: flex;
+  margin-bottom: 20px;
+  padding: 20px;
+  gap: 12px;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 12px;
+}
+
+.budget-form select,
+.budget-form input {
+  height: 44px;
+  padding: 0 14px;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.budget-form select:focus,
+.budget-form input:focus {
+  border-color: #C7F36B;
+  box-shadow: 0 0 0 3px rgba(199, 243, 107, 0.15);
+}
+
+.budget-form select {
+  flex: 1;
+  min-width: 0;
+}
+
+.budget-form input {
+  width: 180px;
+  min-width: 0;
+}
+
+.budget-form button {
+  display: inline-flex;
+  padding: 11px 22px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #0a0a0a;
+  background-color: #C7F36B;
+  border: 1px solid #C7F36B;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budget-form button:hover {
+  background-color: #648D22;
+  border-color: #648D22;
+}
+
+/* =========================================
+   BUDGET TABLE
+========================================= */
+
+.budget-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 12px;
+}
+
+.budget-table-head,
+.budget-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.3fr 2fr 1fr 0.5fr;
+  padding: 16px 20px;
+  align-items: center;
+  gap: 16px;
+}
+
+.budget-table-head {
+  color: #737373;
+  background-color: #faf8f5;
+  border-bottom: 1px solid #ede8dd;
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.budget-row {
+  border-bottom: 1px solid #ede8dd;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.budget-row:last-child {
+  border-bottom: none;
+}
+
+.budget-row > strong {
+  font-family: "Archivo", sans-serif;
+  font-weight: 700;
+  color: #1a1a1a;
+  overflow-wrap: anywhere;
+}
+
+.budget-category,
+.budget-amount {
+  min-width: 0;
+}
+
+/* =========================================
+   PROGRESS BAR
+========================================= */
+
+.budget-progress {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.budget-progress-track {
+  position: relative;
+  flex: 1;
+  min-width: 20px;
+  height: 6px;
+  overflow: hidden;
+  background-color: #f5f1ea;
+  border-radius: 10px;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  background-color: #C7F36B;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.budget-progress-fill.warning-fill {
+  background-color: #88b13b;
+}
+
+.budget-progress-fill.danger-fill {
+  background-color: #dc2626;
+}
+
+.budget-progress small {
+  flex-shrink: 0;
+  min-width: 36px;
+  color: #737373;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.budget-progress small.exceeded-percent {
+  color: #dc2626;
+  font-weight: 800;
+}
+
+.budget-track-exceeded {
+  background-color: #fee2e2;
+}
+
+/* =========================================
+   STATUS BADGES
+========================================= */
+
+.budget-status {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 12px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.status-good {
+  color: #16a34a;
+  background-color: #dcfce7;
+}
+
+.status-warning {
+  color: #a16207;
+  background-color: #F4FDE5;
+}
+
+.status-danger {
+  color: #dc2626;
+  background-color: #fee2e2;
+}
+
+/* =========================================
+   DELETE BUTTON
+========================================= */
+
+.budget-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: #dc2626;
+  background: transparent;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budget-delete-btn:hover {
+  background-color: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+/* =========================================
+   EMPTY / LOADING STATE
+========================================= */
+
+.budget-empty {
+  padding: 48px 20px;
+  text-align: center;
+  color: #737373;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 12px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+}
+
+/* =========================================
+   BUDGET WARNING BANNER
+========================================= */
+
+.budget-alert {
+  display: flex;
+  margin-top: 20px;
+  padding: 14px 18px;
+  align-items: center;
+  gap: 12px;
+  color: #dc2626;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.budget-alert-message {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.budget-alert-message strong {
+  font-weight: 800;
+}
+
+.budget-alert-message span {
+  color: #7f1d1d;
+  line-height: 1.5;
+}
+
+.budget-alert-button {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  color: #dc2626;
+  background-color: #ffffff;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budget-alert-button:hover {
+  background-color: #fee2e2;
+}
+
+/* =========================================
+   BUDGET EXCEEDED MODAL
+========================================= */
+
+.budget-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 10, 10, 0.65);
+  backdrop-filter: blur(5px);
+  animation: budget-overlay-in 0.2s ease;
+}
+
+.budget-modal {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  border: 1px solid #ede8dd;
+  border-radius: 16px;
+  background-color: #ffffff;
+  color: #1a1a1a;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: budget-modal-in 0.25s ease;
+}
+
+.budget-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  padding: 7px;
+  color: #737373;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.budget-modal-close:hover {
+  background-color: #f5f1ea;
+}
+
+.budget-modal-icon {
+  display: flex;
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 18px;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  background-color: #fef2f2;
+  border-radius: 50%;
+}
+
+.budget-modal h2 {
+  margin: 0 0 12px;
+  color: #1a1a1a;
+  font-family: "Archivo", sans-serif;
+  font-size: 23px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.budget-modal-description {
+  margin: 0 0 20px;
+  color: #737373;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.budget-modal-description strong {
+  color: #1a1a1a;
+}
+
+/* =========================================
+   MODAL BUDGET DETAILS
+========================================= */
+
+.budget-modal-details {
+  padding: 14px 16px;
+  background-color: #faf8f5;
+  border: 1px solid #ede8dd;
+  border-radius: 10px;
+  text-align: left;
+}
+
+.budget-modal-details > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+}
+
+.budget-modal-details > div + div {
+  border-top: 1px solid #ede8dd;
+}
+
+.budget-modal-details span {
+  color: #737373;
+}
+
+.budget-modal-details strong {
+  color: #1a1a1a;
+  font-size: 14px;
+  text-align: right;
+}
+
+.budget-modal-details .budget-modal-danger-text,
+.budget-modal-details .budget-modal-excess strong {
+  color: #dc2626;
+}
+
+.budget-modal-extra {
+  margin: 14px 0 0;
+  color: #dc2626;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.budget-modal .budget-modal-tip {
+  margin: 18px 0;
+  color: #737373;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* =========================================
+   MODAL BUTTON
+========================================= */
+
+.budget-modal-button {
+  display: flex;
+  width: 100%;
+  padding: 12px 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #0a0a0a;
+  background-color: #C7F36B;
+  border: 1px solid #C7F36B;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budget-modal-button:hover {
+  background-color: #648D22;
+  border-color: #648D22;
+}
+
+/* =========================================
+   ANIMATIONS
+========================================= */
+
+@keyframes budget-overlay-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes budget-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =========================================
+   RESPONSIVE DESIGN
+========================================= */
+
+@media (max-width: 1000px) {
+  .budget-table-head,
+  .budget-row {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 800px) {
+  .budget-table-wrap {
+    overflow-x: auto;
+  }
+
+  .budget-form {
+    flex-direction: column;
+  }
+
+  .budget-form select,
+  .budget-form input {
+    width: 100%;
+    flex: auto;
+  }
+
+  .budget-form button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .budget-alert {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .budget-alert-button {
+    margin-left: 28px;
+  }
+
+  .budget-modal {
+    padding: 26px 18px;
+  }
+
+  .budget-modal h2 {
+    font-size: 20px;
+  }
+}
+
+/* =========================================
+   DARK MODE
+========================================= */
+
+body.dark-mode .budget-form {
+  background-color: #17171a;
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .budget-form select,
+body.dark-mode .budget-form input {
+  background-color: #1f1f24;
+  color: #f3f4f6;
+  border-color: #2f2f36;
+}
+
+body.dark-mode .budget-form select option {
+  background-color: #1f1f24;
+  color: #f3f4f6;
+}
+
+body.dark-mode .budget-table-wrap {
+  background-color: #17171a;
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .budget-table-head {
+  background-color: #1a1a1f;
+  color: #a3a3a3;
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .budget-row {
+  border-color: #2a2a2e;
+  color: #f3f4f6;
+}
+
+body.dark-mode .budget-row > strong {
+  color: #f3f4f6;
+}
+
+body.dark-mode .budget-progress-track {
+  background-color: #2a2a2e;
+}
+
+body.dark-mode .budget-progress-track.budget-track-exceeded {
+  background-color: #451a1a;
+}
+
+body.dark-mode .budget-progress small {
+  color: #a3a3a3;
+}
+
+body.dark-mode .budget-progress small.exceeded-percent {
+  color: #f87171;
+}
+
+body.dark-mode .status-good {
+  color: #4ade80;
+  background-color: rgba(22, 163, 74, 0.15);
+}
+
+body.dark-mode .status-warning {
+  color: #C7F36B;
+  background-color: rgba(217, 119, 6, 0.15);
+}
+
+body.dark-mode .status-danger {
+  color: #f87171;
+  background-color: rgba(220, 38, 38, 0.15);
+}
+
+body.dark-mode .budget-delete-btn {
+  color: #f87171;
+  border-color: #7f1d1d;
+}
+
+body.dark-mode .budget-delete-btn:hover {
+  background-color: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+body.dark-mode .budget-empty {
+  background-color: #17171a;
+  border-color: #2a2a2e;
+  color: #a3a3a3;
+}
+
+body.dark-mode .budget-alert {
+  color: #f87171;
+  background-color: rgba(220, 38, 38, 0.12);
+  border-color: #7f1d1d;
+}
+
+body.dark-mode .budget-alert-message span {
+  color: #fca5a5;
+}
+
+body.dark-mode .budget-alert-button {
+  color: #f87171;
+  background-color: #1f1f24;
+  border-color: #7f1d1d;
+}
+
+body.dark-mode .budget-alert-button:hover {
+  background-color: #2a1a1a;
+}
+
+body.dark-mode .budget-modal {
+  background-color: #17171a;
+  color: #f3f4f6;
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .budget-modal h2,
+body.dark-mode .budget-modal-description strong,
+body.dark-mode .budget-modal-details strong {
+  color: #f3f4f6;
+}
+
+body.dark-mode .budget-modal-description,
+body.dark-mode .budget-modal .budget-modal-tip {
+  color: #a3a3a3;
+}
+
+body.dark-mode .budget-modal-icon {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: #f87171;
+}
+
+body.dark-mode .budget-modal-details {
+  background-color: #1f1f24;
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .budget-modal-details > div + div {
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .budget-modal-details span {
+  color: #a3a3a3;
+}
+
+body.dark-mode .budget-modal-details .budget-modal-danger-text,
+body.dark-mode .budget-modal-details .budget-modal-excess strong,
+body.dark-mode .budget-modal-extra {
+  color: #f87171;
+}
+
+body.dark-mode .budget-modal-close {
+  color: #a3a3a3;
+}
+
+body.dark-mode .budget-modal-close:hover {
+  background-color: #2a2a2e;
+}
+
+body.dark-mode .budget-modal-button {
+  background-color: #C7F36B;
+  color: #0a0a0a;
+  border-color: #C7F36B;
+}
+
+body.dark-mode .budget-modal-button:hover {
+  background-color: #C7F36B;
+  border-color: #C7F36B;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .budget-progress-fill,
+  .budget-modal,
+  .budget-modal-overlay {
+    animation: none;
+    transition: none;
+  }
+}

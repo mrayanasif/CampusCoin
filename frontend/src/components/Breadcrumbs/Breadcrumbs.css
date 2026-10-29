@@ -1,0 +1,81 @@
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 12px 0;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s, background 0.2s;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-family: inherit;
+}
+
+.breadcrumb-item:hover {
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.breadcrumb-current {
+  color: var(--text-dark);
+  font-weight: 600;
+  cursor: default;
+}
+
+.breadcrumb-current:hover {
+  background: transparent;
+  color: var(--text-dark);
+}
+
+.breadcrumb-home {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.breadcrumb-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumb-sep {
+  color: var(--text-muted);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+body.dark-mode .breadcrumb-item {
+  color: #b1b5bd;
+}
+
+body.dark-mode .breadcrumb-item:hover {
+  color: #f3b8ca;
+  background: rgba(243, 184, 202, 0.12);
+}
+
+body.dark-mode .breadcrumb-current {
+  color: #f3f4f6;
+}
+
+body.dark-mode .breadcrumb-current:hover {
+  background: transparent;
+  color: #f3f4f6;
+}
+
+body.dark-mode .breadcrumb-home {
+  color: #f3b8ca;
+}
+
+body.dark-mode .breadcrumb-sep {
+  color: #6b7280;
+}

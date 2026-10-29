@@ -1,0 +1,241 @@
+.category-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+}
+
+.category-form-panel,
+.category-list-panel {
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 12px;
+}
+
+.category-form-panel {
+  align-self: start;
+  padding: 24px;
+}
+
+.category-form-panel h2,
+.category-group h2 {
+  margin: 0 0 20px;
+  color: #1a1a1a;
+  font-family: "Archivo", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.category-field {
+  margin-bottom: 16px;
+}
+
+.category-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #1a1a1a;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.category-field input,
+.category-field select {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.category-field input::placeholder {
+  color: #a8a29e;
+}
+
+.category-field input:focus,
+.category-field select:focus {
+  border-color: #C7F36B;
+  box-shadow: 0 0 0 3px rgba(199, 243, 107, 0.15);
+}
+
+.category-save {
+  display: flex;
+  width: 100%;
+  padding: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #0a0a0a;
+  background-color: #C7F36B;
+  border: none;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-save:hover {
+  background-color: #648D22;
+}
+
+.category-list-panel {
+  padding: 24px;
+}
+
+.category-group + .category-group {
+  margin-top: 32px;
+}
+
+.category-row {
+  display: flex;
+  padding: 14px 0;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ede8dd;
+}
+
+.category-row:last-child {
+  border-bottom: none;
+}
+
+.category-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #1a1a1a;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.category-name small {
+  color: #a8a29e;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.category-icon {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  color: #587D20;
+  background-color: #F4FDE5;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.category-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.category-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: #1a1a1a;
+  background: transparent;
+  border: 1px solid #ede8dd;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-actions button:hover {
+  background-color: #0a0a0a;
+  color: #587D20;
+  border-color: #0a0a0a;
+}
+
+.category-actions .category-delete {
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.category-actions .category-delete:hover {
+  background-color: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+@media (max-width: 800px) {
+  .category-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+body.dark-mode .category-form-panel,
+body.dark-mode .category-list-panel {
+  background-color: #17171a;
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .category-form-panel h2,
+body.dark-mode .category-group h2 {
+  color: #f3f4f6;
+}
+
+body.dark-mode .category-field label {
+  color: #d1d5db;
+}
+
+body.dark-mode .category-field input,
+body.dark-mode .category-field select {
+  background-color: #1f1f24;
+  color: #f3f4f6;
+  border-color: #2f2f36;
+}
+
+body.dark-mode .category-field input::placeholder {
+  color: #6b7280;
+}
+
+body.dark-mode .category-row {
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .category-name {
+  color: #f3f4f6;
+}
+
+body.dark-mode .category-name small {
+  color: #6b7280;
+}
+
+body.dark-mode .category-icon {
+  background-color: rgba(199, 243, 107, 0.15);
+  color: #C7F36B;
+}
+
+body.dark-mode .category-actions button {
+  color: #C7F36B;
+  border-color: #2f2f36;
+}
+
+body.dark-mode .category-actions button:hover {
+  background-color: #C7F36B;
+  color: #0a0a0a;
+  border-color: #C7F36B;
+}
+
+body.dark-mode .category-actions .category-delete {
+  color: #f87171;
+  border-color: #7f1d1d;
+}
+
+body.dark-mode .category-actions .category-delete:hover {
+  background-color: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}

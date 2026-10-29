@@ -1,0 +1,77 @@
+.statistics-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.statistics-summary > div {
+  padding: 24px;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 12px;
+}
+
+.statistics-summary span,
+.statistics-summary strong {
+  display: block;
+}
+
+.statistics-summary span {
+  color: #737373;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.statistics-summary strong {
+  margin-top: 8px;
+  color: #1a1a1a;
+  font-family: "Archivo", sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.statistics-chart {
+  padding: 24px;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 12px;
+}
+
+.statistics-chart h2 {
+  margin: 0 0 20px;
+  color: #1a1a1a;
+  font-family: "Archivo", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.statistics-chart > div {
+  height: 320px;
+  font-size: 12px;
+}
+
+.statistics-chart .recharts-bar-rectangle path,
+.statistics-chart .recharts-bar-rectangle rect {
+  fill: #587D20;
+}
+
+.statistics-chart .recharts-cartesian-grid line {
+  stroke: #f5f1ea;
+}
+
+.statistics-chart .recharts-text,
+.statistics-chart .recharts-cartesian-axis-tick-value {
+  fill: #737373;
+  font-family: "Inter", sans-serif;
+}
+
+@media (max-width: 650px) {
+  .statistics-summary {
+    grid-template-columns: 1fr;
+  }
+}

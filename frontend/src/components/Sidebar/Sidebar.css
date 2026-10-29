@@ -1,0 +1,233 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1100;
+  display: flex;
+  width: 240px;
+  height: 100vh;
+  flex-direction: column;
+  color: #e5e5e5;
+  background-color: #0f0f0f;
+  border-right: 1px solid #1f1f1f;
+}
+
+.sidebar-header {
+  display: flex;
+  height: 76px;
+  padding: 0 20px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.sidebar-brand:hover {
+  color: #ffffff;
+}
+
+.sidebar-logo {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  color: #0f0f0f;
+  background-color: #C7F36B;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.sidebar-brand strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.2px;
+}
+
+.sidebar-brand small {
+  color: #a3a3a3;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  margin-top: 2px;
+}
+
+.sidebar-close {
+  display: none;
+  color: #e5e5e5;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.sidebar-close:hover {
+  background: #1f1f1f;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px 12px;
+  overflow-y: auto;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: #0f0f0f;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: #262626;
+  border-radius: 3px;
+}
+
+.sidebar-link {
+  position: relative;
+  display: flex;
+  padding: 11px 14px;
+  align-items: center;
+  gap: 12px;
+  color: #a3a3a3;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.sidebar-link:hover {
+  color: #C7F36B;
+  background-color: rgba(199, 243, 107, 0.06);
+}
+
+.sidebar-link.active {
+  color: #0f0f0f;
+  background-color: #C7F36B;
+  font-weight: 600;
+}
+
+.sidebar-link.active svg {
+  color: #0f0f0f;
+}
+
+.sidebar-footer {
+  padding: 16px 12px 20px;
+  border-top: 1px solid #1f1f1f;
+}
+
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 16px;
+  background: transparent;
+  color: #587D20;
+  border: 1.5px solid #C7F36B;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.sidebar-logout svg {
+  color: #587D20;
+  transition: color 0.2s ease;
+}
+
+.sidebar-logout:hover {
+  background: #C7F36B;
+  color: #0f0f0f;
+  border-color: #C7F36B;
+}
+
+.sidebar-logout:hover svg {
+  color: #0f0f0f;
+}
+
+.sidebar-logout:active {
+  transform: scale(0.98);
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 991px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+
+  .sidebar-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    border: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .sidebar {
+    width: 275px;
+    max-width: 85%;
+  }
+}
+
+.sidebar-logo { color: #0b0f0e; background-color: #c7f36b; }
+.sidebar-link:hover { color: #c7f36b; background-color: rgba(199, 243, 107, .09); }
+.sidebar-link.active { color: #0b0f0e; background-color: #c7f36b; }
+.sidebar-link.active svg { color: #0b0f0e; }
+.sidebar-logout { color: #c7f36b; border-color: #c7f36b; }
+.sidebar-logout svg { color: #c7f36b; }
+.sidebar-logout:hover { color: #0b0f0e; background: #c7f36b; border-color: #c7f36b; }
+.sidebar-logout:hover svg { color: #0b0f0e; }
+.sidebar-logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 8px;
+  flex-shrink: 0;
+}

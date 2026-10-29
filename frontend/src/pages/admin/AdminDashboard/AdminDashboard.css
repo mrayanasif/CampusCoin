@@ -1,0 +1,70 @@
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.admin-stat-grid > div {
+  padding: 24px;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 12px;
+}
+
+.admin-stat-grid svg {
+  color: #587D20;
+}
+
+.admin-stat-grid span,
+.admin-stat-grid strong {
+  display: block;
+}
+
+.admin-stat-grid span {
+  margin-top: 14px;
+  color: #737373;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.admin-stat-grid strong {
+  margin-top: 6px;
+  color: #1a1a1a;
+  font-family: "Archivo", sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.admin-panel {
+  padding: 24px;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 12px;
+}
+
+.admin-panel h2 {
+  margin: 0 0 12px;
+  color: #1a1a1a;
+  font-family: "Archivo", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.admin-panel p {
+  margin: 0;
+  color: #737373;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+  .admin-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
