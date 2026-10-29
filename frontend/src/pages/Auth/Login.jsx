@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, ArrowRight, ShieldCheck } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, ShieldCheck, ShieldAlert } from "lucide-react";
 import toast from "react-hot-toast";
 
 import Navbar from "../../components/Navbar/Navbar";
@@ -10,6 +10,9 @@ import "./Auth.css";
 
 function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isSessionExpired = searchParams.get("reason") === "session_expired";
+  const isMultiTabLogout = searchParams.get("reason") === "multi_tab_logout";
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { currency, toggleCurrency } = useCurrency();
@@ -121,6 +124,20 @@ function Login() {
 
           <section className="lux-auth-form-side">
             <div className="lux-auth-card">
+              {(isSessionExpired || isMultiTabLogout) && (
+                <div className="bank-session-alert-banner">
+                  <ShieldAlert size={22} className="bank-session-alert-icon" />
+                  <div>
+                    <strong>Secure Session Ended</strong>
+                    <p>
+                      {isSessionExpired
+                        ? "Your banking session automatically timed out due to inactivity to protect your financial details."
+                        : "You were signed out from another browser tab or device."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="lux-auth-card-head">
                 <h2>Login</h2>
                 <p>Enter your credentials to continue</p>

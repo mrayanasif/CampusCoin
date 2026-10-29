@@ -5,11 +5,12 @@ import {
   BookmarkCheck,
   CalendarDays,
   Download,
-  Lightbulb,
+  Leaf,
   TrendingUp,
   Sparkles,
   Loader2,
   Trash2,
+  ArrowRight,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import jsPDF from "jspdf";
@@ -51,7 +52,7 @@ function Insights() {
         } else {
           toast.error(
             insightsRes.reason?.response?.data?.message ||
-              "Failed to load insights"
+            "Failed to load insights"
           );
         }
 
@@ -85,7 +86,7 @@ function Insights() {
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
-          "Failed to generate insight. Add transactions first."
+        "Failed to generate insight. Add transactions first."
       );
     } finally {
       setGenerating(false);
@@ -341,76 +342,127 @@ function Insights() {
             </div>
           ) : (
             displayedInsights.map((insight) => (
-            <article className="insight-card" key={insight._id}>
-              <div className="insight-date">
-                <CalendarDays size={17} />
-                {insight.month}
-              </div>
-
-              <div className="insight-heading">
-                <h2>
-                  {insight.summaryText?.split(".")[0] || "Monthly Summary"}
-                </h2>
-
-                <div className="insight-actions">
-                  <button
-                    type="button"
-                    className="insight-save-btn"
-                    onClick={() => toggleSaved(insight)}
-                    aria-label="Save insight"
-                    title={isBookmarked(insight._id) ? "Unsave" : "Save"}
-                  >
-                    {isBookmarked(insight._id) ? (
-                      <BookmarkCheck size={19} />
-                    ) : (
-                      <Bookmark size={19} />
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    className="insight-download-btn"
-                    onClick={() => downloadInsightPdf(insight)}
-                    aria-label="Download insight as PDF"
-                    title="Download as PDF"
-                  >
-                    <Download size={19} />
-                  </button>
-
-                  <button
-                    type="button"
-                    className="insight-delete-btn"
-                    onClick={() => deleteInsight(insight._id)}
-                    aria-label="Delete insight"
-                    title="Delete"
-                  >
-                    <Trash2 size={19} />
-                  </button>
+              <article className="insight-card" key={insight._id}>
+                <div className="insight-date">
+                  <CalendarDays size={17} />
+                  {insight.month}
                 </div>
-              </div>
 
-              <p>{insight.summaryText}</p>
+                <div className="insight-heading">
+                  <h2>
+                    {insight.summaryText?.split(".")[0] || "Monthly Summary"}
+                  </h2>
 
-              {insight.flaggedCategories?.length > 0 && (
-                <div className="insight-flagged">
-                  {insight.flaggedCategories.map((f, i) => (
-                    <div key={i} className="insight-flagged-item">
-                      ⚠️ {f.message}
-                    </div>
-                  ))}
-                </div>
-              )}
+                  <div className="insight-actions">
+                    <button
+                      type="button"
+                      className="insight-save-btn"
+                      onClick={() => toggleSaved(insight)}
+                      aria-label="Save insight"
+                      title={isBookmarked(insight._id) ? "Unsave" : "Save"}
+                    >
+                      {isBookmarked(insight._id) ? (
+                        <BookmarkCheck size={19} />
+                      ) : (
+                        <Bookmark size={19} />
+                      )}
+                    </button>
 
-              {insight.tipText && (
-                <div className="insight-advice">
-                  <Lightbulb size={17} />
-                  <div>
-                    <strong>Suggested action</strong>
-                    <span>{insight.tipText}</span>
+                    <button
+                      type="button"
+                      className="insight-download-btn"
+                      onClick={() => downloadInsightPdf(insight)}
+                      aria-label="Download insight as PDF"
+                      title="Download as PDF"
+                    >
+                      <Download size={19} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className="insight-delete-btn"
+                      onClick={() => deleteInsight(insight._id)}
+                      aria-label="Delete insight"
+                      title="Delete"
+                    >
+                      <Trash2 size={19} />
+                    </button>
                   </div>
                 </div>
-              )}
-            </article>
+
+                <p>{insight.summaryText}</p>
+
+                {insight.flaggedCategories?.length > 0 && (
+                  <div className="insight-flagged">
+                    {insight.flaggedCategories.map((f, i) => (
+                      <div key={i} className="insight-flagged-item">
+                        ⚠️ {f.message}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {insight.tipText && (
+                  <div className="insight-advice">
+                    <Leaf size={17} style={{ color: "#16a34a", flexShrink: 0 }} />
+                    <div>
+                      <strong>AI Recommendation</strong>
+                      <span>{insight.tipText}</span>
+                    </div>
+                  </div>
+                )}
+
+                {insight.syncedTips?.length > 0 && (
+                  <div className="insight-synced-tips" style={{ marginTop: "16px", borderTop: "1px dashed #e2e8f0", paddingTop: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px", fontSize: "13px", fontWeight: "700", color: "#15803d" }}>
+                      <Leaf size={15} style={{ color: "#16a34a" }} />
+                      <span>How You Can Manage (Linked Saving Tips)</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {insight.syncedTips.map((tip, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "10px 14px",
+                            borderRadius: "8px",
+                            background: "#f0fdf4",
+                            border: "1px solid #bbf7d0",
+                            fontSize: "13px",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontWeight: "700", color: "#16a34a" }}>{idx + 1}.</span>
+                            <span style={{ color: "#1e293b", fontWeight: "500" }}>{tip.title}</span>
+                            <span style={{ color: "#15803d", fontWeight: "700", background: "#dcfce7", padding: "2px 8px", borderRadius: "12px", fontSize: "11px" }}>
+                              Save ${tip.potentialSavings}/month
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => navigate("/saving-tips")}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              color: "#16a34a",
+                              fontWeight: "600",
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px"
+                            }}
+                          >
+                            View Tip <ArrowRight size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </article>
             ))
           )}
         </div>

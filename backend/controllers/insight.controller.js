@@ -14,7 +14,10 @@ exports.getAllInsights = async (req, res, next) => {
 exports.getCurrentInsight = async (req, res, next) => {
   try {
     const month = new Date().toISOString().slice(0, 7);
-    const insight = await Insight.findOne({ user: req.user._id, month });
+    let insight = await Insight.findOne({ user: req.user._id, month });
+    if (!insight) {
+      insight = await generateInsightForUser(req.user._id, { month });
+    }
     res.json({ success: true, insight });
   } catch (error) {
     next(error);

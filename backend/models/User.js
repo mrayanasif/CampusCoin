@@ -44,6 +44,12 @@ const userSchema = new mongoose.Schema(
       min: 0,
     },
 
+    savings: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     profileImage: {
       type: String,
       default: "",
@@ -57,6 +63,16 @@ const userSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
       default: null,
+    },
+
+    lastActive: {
+      type: Date,
+      default: Date.now,
+    },
+
+    tokenVersion: {
+      type: Number,
+      default: 0,
     },
 
     // Accessibility preferences (SRS 1.6 "Accessibility and UI Enhancements").

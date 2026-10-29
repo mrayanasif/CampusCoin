@@ -18,6 +18,24 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "User not found or inactive" });
     }
 
+    // Bank-grade token invalidation: verify tokenVersion against DB record
+    if (
+      decoded.tokenVersion !== undefined &&
+      user.tokenVersion !== undefined &&
+      decoded.tokenVersion !== user.tokenVersion
+    ) {
+      return res.status(401).json({
+        success: false,
+        sessionExpired: true,
+        message: "Your session has ended or was invalidated. Please sign in again.",
+      });
+    }
+
+    // Periodically update user's lastActive timestamp
+    const now = Date.now();
+    if (!user.lastActive || now - new Date(user.lastActive).getTime() > 60000) {
+      User.updateOne({ _id: user._id }, { $set: { lastActive: new Date() } }).catch(() => {});
+    }
 
     req.user = { id: user._id.toString(), _id: user._id, role: user.role };
 

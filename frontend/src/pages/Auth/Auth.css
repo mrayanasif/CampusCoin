@@ -651,3 +651,144 @@
   .lux-auth-card-wide { padding: 28px 22px; border-radius: 22px; }
   .lux-auth-card-head h2 { font-size: 27px; }
 }
+
+/* Password Recovery & Reset Specific Lux Helpers */
+.lux-recovery-success {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.lux-success-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(34, 197, 94, 0.12);
+  margin-bottom: 20px;
+}
+
+.lux-success-icon {
+  color: #16a34a;
+}
+
+.lux-recovery-success h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink-primary, #0a0a0a);
+  margin: 0 0 10px 0;
+  letter-spacing: -0.5px;
+}
+
+.lux-recovery-success p {
+  color: var(--text-muted, #737373);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.lux-fallback-box {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.lux-fallback-box p {
+  color: #dc2626;
+  font-size: 13px;
+  margin: 0;
+}
+
+.lux-alert-box {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 14px;
+  color: #dc2626;
+  font-size: 13px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.lux-resend-btn {
+  background: transparent;
+  border: 1px solid var(--border-light, #e5e7eb);
+  color: var(--text-muted, #737373);
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.lux-resend-btn:hover {
+  background: var(--surface-offwhite, #f8f7f4);
+  color: var(--ink-primary, #0a0a0a);
+  border-color: var(--brand-lime, #C7F36B);
+}
+
+/* Bank-Grade Session Alert Banner */
+.bank-session-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  margin-bottom: 20px;
+  animation: sessionAlertPop 0.3s ease-out;
+}
+
+@keyframes sessionAlertPop {
+  from {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.bank-session-alert-icon {
+  color: #d97706;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.bank-session-alert-banner strong {
+  display: block;
+  font-family: var(--font-display, "Archivo", sans-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 2px;
+}
+
+.bank-session-alert-banner p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #b45309;
+}
+
+body.dark-mode .bank-session-alert-banner {
+  background-color: rgba(217, 119, 6, 0.12);
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+body.dark-mode .bank-session-alert-banner strong {
+  color: #fbbf24;
+}
+
+body.dark-mode .bank-session-alert-banner p {
+  color: #fde68a;
+}
+

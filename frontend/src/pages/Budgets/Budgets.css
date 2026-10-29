@@ -244,8 +244,34 @@
 }
 
 /* =========================================
-   DELETE BUTTON
+   ACTIONS (EDIT & DELETE)
 ========================================= */
+
+.budget-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.budget-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  color: #2563eb;
+  background: transparent;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budget-edit-btn:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
 
 .budget-delete-btn {
   display: inline-flex;
@@ -264,6 +290,363 @@
   background-color: #dc2626;
   color: #ffffff;
   border-color: #dc2626;
+}
+
+/* =========================================
+   BUDGET FORM ENHANCEMENTS
+========================================= */
+
+.budget-form {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 24px;
+  padding: 20px;
+  gap: 16px;
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 12px;
+}
+
+.budget-form-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.budget-form-meta h4 {
+  margin: 0;
+  font-family: "Archivo", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.budget-editing-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background-color: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.budget-form-fields {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.budget-form-fields select {
+  flex: 1;
+  min-width: 200px;
+}
+
+.budget-form-fields input {
+  width: 200px;
+}
+
+.budget-save-btn {
+  display: inline-flex;
+  padding: 11px 22px;
+  align-items: center;
+  justify-content: center;
+  color: #0a0a0a;
+  background-color: #C7F36B;
+  border: 1px solid #C7F36B;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budget-save-btn:hover {
+  background-color: #648D22;
+  border-color: #648D22;
+}
+
+.budget-cancel-btn {
+  display: inline-flex;
+  padding: 11px 18px;
+  align-items: center;
+  justify-content: center;
+  color: #525252;
+  background-color: transparent;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.budget-cancel-btn:hover {
+  background-color: #f5f5f5;
+  color: #1a1a1a;
+}
+
+/* =========================================
+   BUDGET UTILIZATION PIE CHART CARD
+========================================= */
+
+.budget-chart-card {
+  background-color: #ffffff;
+  border: 1px solid #ede8dd;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.budget-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.budget-chart-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.budget-chart-icon {
+  color: #16a34a;
+}
+
+.budget-chart-title-wrap h3 {
+  margin: 0;
+  font-family: "Archivo", sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.budget-chart-title-wrap p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #737373;
+}
+
+.budget-chart-body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+.budget-pie-wrap {
+  position: relative;
+  width: 100%;
+  height: 210px;
+}
+
+.budget-pie-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  padding: 10px;
+}
+
+.budget-pie-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.budget-pie-center strong {
+  display: block;
+  font-family: "Archivo", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.budget-pie-center span {
+  font-size: 10px;
+  color: #737373;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.budget-pie-tooltip {
+  background-color: var(--surface-card, #ffffff);
+  border: 1px solid var(--border-light, #ede8dd);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 12px;
+}
+
+.budget-pie-tooltip strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #1a1a1a;
+  border-bottom: 1px solid #ede8dd;
+  padding-bottom: 3px;
+}
+
+.budget-pie-tooltip .spent-val {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.budget-pie-tooltip .util-good {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.budget-pie-tooltip .util-warning {
+  color: #d97706;
+  font-weight: 700;
+}
+
+.budget-pie-tooltip .util-danger {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.budget-chart-insights {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.most-used-highlight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background-color: #faf8f5;
+  border: 1px solid #ede8dd;
+  border-left: 4px solid #C7F36B;
+  border-radius: 12px;
+}
+
+.most-used-highlight.empty-state {
+  border-left-color: #a3a3a3;
+}
+
+.most-used-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background-color: rgba(199, 243, 107, 0.35);
+  color: #587D20;
+  flex-shrink: 0;
+}
+
+.most-used-info {
+  flex: 1;
+}
+
+.most-used-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #737373;
+  margin-bottom: 2px;
+}
+
+.most-used-info h4 {
+  margin: 0 0 3px;
+  font-family: "Archivo", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.most-used-stats {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #525252;
+  flex-wrap: wrap;
+}
+
+.most-used-pct.util-good {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.most-used-pct.util-warning {
+  color: #d97706;
+  font-weight: 700;
+}
+
+.most-used-pct.util-danger {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.budget-legend-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.budget-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #faf8f5;
+  border: 1px solid #ede8dd;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.budget-legend-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.budget-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.budget-legend-val {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #737373;
+  font-weight: 600;
+}
+
+.budget-legend-val small {
+  color: #999;
+}
+
+@media (max-width: 860px) {
+  .budget-chart-body {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 /* =========================================
@@ -745,6 +1128,54 @@ body.dark-mode .budget-modal-button {
 body.dark-mode .budget-modal-button:hover {
   background-color: #C7F36B;
   border-color: #C7F36B;
+}
+
+body.dark-mode .budget-edit-btn {
+  background-color: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.3);
+  color: #60a5fa;
+}
+
+body.dark-mode .budget-edit-btn:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+body.dark-mode .budget-chart-card,
+body.dark-mode .most-used-highlight,
+body.dark-mode .budget-legend-item {
+  background-color: #17171a;
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .budget-chart-title-wrap h3,
+body.dark-mode .budget-pie-center strong,
+body.dark-mode .most-used-info h4,
+body.dark-mode .budget-legend-label {
+  color: #f3f4f6;
+}
+
+body.dark-mode .budget-chart-title-wrap p,
+body.dark-mode .budget-pie-center span,
+body.dark-mode .most-used-label,
+body.dark-mode .most-used-stats,
+body.dark-mode .budget-legend-val {
+  color: #a3a3a3;
+}
+
+body.dark-mode .budget-form-meta h4 {
+  color: #f3f4f6;
+}
+
+body.dark-mode .budget-cancel-btn {
+  border-color: #3f3f46;
+  color: #d4d4d8;
+}
+
+body.dark-mode .budget-cancel-btn:hover {
+  background-color: #27272a;
+  color: #ffffff;
 }
 
 /* Respect reduced-motion preferences */

@@ -8,30 +8,74 @@ const FRONTEND_URL = (process.env.FRONTEND_URL || "http://localhost:5173").repla
   ""
 );
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+let cachedTransporter = null;
 
-transporter.verify((error) => {
-  if (error) {
-    console.log("⚠️  Email service not configured:", error.message);
-  } else {
-    console.log("📧 Email service ready");
+function getSenderEmail() {
+  if (process.env.EMAIL_USER && process.env.EMAIL_USER.includes("@")) {
+    return process.env.EMAIL_USER.trim();
   }
+  if (process.env.NODEMAILER_APPNAME && process.env.NODEMAILER_APPNAME.includes("@")) {
+    return process.env.NODEMAILER_APPNAME.trim();
+  }
+  return "zeeshaankhalid.ch@gmail.com";
+}
+
+function createTransporter(pass) {
+  const user = getSenderEmail();
+  return nodemailer.createTransport({
+    host: process.env.EMAIL_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.EMAIL_PORT, 10) || 587,
+    secure: parseInt(process.env.EMAIL_PORT, 10) === 465,
+    auth: {
+      user,
+      pass: pass ? pass.trim() : "",
+    },
+  });
+}
+
+async function getTransporter() {
+  if (cachedTransporter) return cachedTransporter;
+
+  const candidates = [
+    process.env.EMAIL_PASS,
+    process.env.NODEMAILER_APPPASSWORD,
+  ].filter(Boolean);
+
+  for (const pass of candidates) {
+    const t = createTransporter(pass);
+    try {
+      await t.verify();
+      console.log("📧 Email service ready (authenticated with Google SMTP)");
+      cachedTransporter = t;
+      return cachedTransporter;
+    } catch (e) {
+      console.warn("⚠️  Email pass candidate rejected, checking next option...", e.message);
+    }
+  }
+
+  // Fallback to default transporter if verification fails or no candidates
+  cachedTransporter = createTransporter(candidates[0]);
+  return cachedTransporter;
+}
+
+// Initial connection check at startup
+getTransporter().catch((error) => {
+  console.log("⚠️  Email service not configured:", error.message);
 });
 
+async function sendPasswordResetEmail(toEmail, userName, token, clientOrigin) {
+  let baseUrl = clientOrigin;
+  if (!baseUrl || !baseUrl.startsWith("http")) {
+    baseUrl = FRONTEND_URL;
+  } else {
+    baseUrl = baseUrl.replace(/\/+$/, "");
+  }
 
-async function sendPasswordResetEmail(toEmail, userName, token) {
-  const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
+  const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+  const senderEmail = getSenderEmail();
 
   const mailOptions = {
-    from: `"Campus Coin" <${process.env.EMAIL_USER}>`,
+    from: `"Campus Coin" <${senderEmail}>`,
     to: toEmail,
     subject: "🔐 Reset your Campus Coin password",
     html: `
@@ -48,7 +92,7 @@ async function sendPasswordResetEmail(toEmail, userName, token) {
 
           <div style="text-align: center; margin: 32px 0;">
             <a href="${resetUrl}"
-               style="display: inline-block; background: #7f1d3a; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px;">
+               style="display: inline-block; background: #0B0F0E; color: #C7F36B; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px;">
               Reset Password
             </a>
           </div>
@@ -77,6 +121,7 @@ async function sendPasswordResetEmail(toEmail, userName, token) {
     `,
   };
 
+  const transporter = await getTransporter();
   return transporter.sendMail(mailOptions);
 }
 
@@ -123,7 +168,7 @@ async function sendReportEmail(toEmail, userName, reportData) {
   const balanceColor = summary.savings >= 0 ? "#16a34a" : "#dc2626";
 
   const mailOptions = {
-    from: `"Campus Coin" <${process.env.EMAIL_USER}>`,
+    from: `"Campus Coin" <${getSenderEmail()}>`,
     to: toEmail,
     subject: `📊 Your Campus Coin Report — ${periodLabel}`,
     html: `
@@ -179,7 +224,8 @@ async function sendReportEmail(toEmail, userName, reportData) {
     `,
   };
 
-  return transporter.sendMail(mailOptions);
+  const activeTransporter = await getTransporter();
+  return activeTransporter.sendMail(mailOptions);
 }
 
-module.exports = { sendPasswordResetEmail, sendReportEmail, transporter };
+module.exports = { sendPasswordResetEmail, sendReportEmail, getTransporter };

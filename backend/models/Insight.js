@@ -23,6 +23,25 @@ const insightSchema = new mongoose.Schema(
       default: "",
     },
 
+    spendingInsight: {
+      type: String,
+      default: "",
+    },
+
+    recommendation: {
+      type: String,
+      default: "",
+    },
+
+    syncedTips: [
+      {
+        title: { type: String, default: "" },
+        message: { type: String, default: "" },
+        potentialSavings: { type: Number, default: 0 },
+        category: { type: String, default: "" },
+      },
+    ],
+
     flaggedCategories: [
       {
         category: {

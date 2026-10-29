@@ -339,17 +339,37 @@ exports.getDashboard = async (req, res, next) => {
       end
     );
 
-    const tips = await SavingTip.find({
+    let insight = await Insight.findOne({
+      user: userId,
+      month,
+    });
+
+    if (!insight) {
+      try {
+        const { generateInsightForUser } = require("../services/insight.service");
+        insight = await generateInsightForUser(userId, { month });
+      } catch (err) {
+        console.warn("Auto-generate dashboard insight failed:", err.message);
+      }
+    }
+
+    let tips = await SavingTip.find({
       user: userId,
       isDismissed: false,
     })
       .sort(TIP_SORT)
       .limit(3);
 
-    const insight = await Insight.findOne({
-      user: userId,
-      month,
-    });
+    // If still no tips, populate default tips
+    if (tips.length === 0) {
+      try {
+        const { generateTipsForUser } = require("../services/tip.service");
+        tips = await generateTipsForUser(userId);
+        tips = (tips || []).slice(0, 3);
+      } catch (err) {
+        console.warn("Auto-generate tips failed:", err.message);
+      }
+    }
 
     const unread = await Notification.countDocuments({
       user: userId,

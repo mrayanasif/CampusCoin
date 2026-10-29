@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, BookmarkCheck, Lightbulb, X, Pin, PinOff } from "lucide-react";
+import { Bookmark, BookmarkCheck, Leaf, X, Pin, PinOff } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
@@ -112,7 +112,7 @@ function SavingTips() {
       </div>
 
       <div className="tips-intro">
-        <Lightbulb size={20} />
+        <Leaf size={20} className="leaf-green-icon" />
         <span>Tips with the highest potential savings are shown first.</span>
       </div>
 
@@ -143,7 +143,7 @@ function SavingTips() {
             return (
               <article className="tip-card" key={tip._id}>
                 <div className="tip-card-icon">
-                  <Lightbulb size={21} />
+                  <Leaf size={21} className="leaf-green-icon" />
                 </div>
 
                 <div className="tip-card-content">

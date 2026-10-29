@@ -1,0 +1,250 @@
+/* ============================================================
+   BANK-GRADE SECURE SESSION MANAGEMENT MODAL & NOTICES
+   ============================================================ */
+
+.session-warning-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.72);
+  /* Strong blur to obscure sensitive banking balances & transactions from shoulder surfers */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 20px;
+  animation: sessionBackdropFade 0.25s ease-out;
+}
+
+@keyframes sessionBackdropFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.session-warning-modal {
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  animation: sessionModalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@keyframes sessionModalPop {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.session-shield-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fffbeb;
+  border: 4px solid #fef3c7;
+  color: #d97706;
+  margin-bottom: 18px;
+  animation: shieldPulse 2s infinite ease-in-out;
+}
+
+@keyframes shieldPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.25);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 12px rgba(217, 119, 6, 0);
+  }
+}
+
+.session-shield-icon {
+  color: #d97706;
+}
+
+.session-warning-modal h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display, "Archivo", sans-serif);
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+}
+
+.session-warning-message {
+  margin: 0 0 20px;
+  font-family: "Inter", sans-serif;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #64748b;
+  max-width: 360px;
+}
+
+.session-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 30px;
+  color: #dc2626;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.countdown-clock {
+  animation: clockSpin 1s infinite steps(8);
+}
+
+@keyframes clockSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.session-countdown-pill strong {
+  font-family: "Archivo", sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.session-warning-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.session-extend-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+}
+
+.session-extend-btn:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.35);
+}
+
+.session-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 20px;
+  border-radius: 10px;
+  background: transparent;
+  color: #64748b;
+  border: 1.5px solid #e2e8f0;
+  font-family: "Inter", sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.session-logout-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.session-security-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+  width: 100%;
+}
+
+.session-security-footer span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* Dark mode overrides */
+body.dark-mode .session-warning-backdrop {
+  background: rgba(0, 0, 0, 0.82);
+}
+
+body.dark-mode .session-warning-modal {
+  background: #18181b;
+  border-color: #27272a;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+body.dark-mode .session-warning-modal h2 {
+  color: #f4f4f5;
+}
+
+body.dark-mode .session-warning-message {
+  color: #a1a1aa;
+}
+
+body.dark-mode .session-shield-badge {
+  background: rgba(217, 119, 6, 0.15);
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+body.dark-mode .session-countdown-pill {
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #f87171;
+}
+
+body.dark-mode .session-logout-btn {
+  border-color: #27272a;
+  color: #a1a1aa;
+}
+
+body.dark-mode .session-logout-btn:hover {
+  background: #27272a;
+  color: #f4f4f5;
+}
+
+body.dark-mode .session-security-footer {
+  border-top-color: #27272a;
+}
+

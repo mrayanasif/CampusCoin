@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ShieldCheck } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ShieldCheck, ShieldAlert } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../../api/axios";
@@ -8,6 +8,8 @@ import "./AdminLogin.css";
 
 function AdminLogin() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isSessionExpired = searchParams.get("reason") === "session_expired";
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -50,6 +52,13 @@ function AdminLogin() {
   return (
     <div className="admin-login-page">
       <div className="admin-login-box">
+        {isSessionExpired && (
+          <div className="admin-session-expired-banner">
+            <ShieldAlert size={20} />
+            <span>Admin session expired due to inactivity.</span>
+          </div>
+        )}
+
         <div className="admin-login-header">
           <ShieldCheck size={40} />
           <h2>Admin Login</h2>

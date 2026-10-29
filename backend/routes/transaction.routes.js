@@ -6,6 +6,7 @@ const { protect } = require("../middleware/auth.middleware");
 router.get("/", protect, txnController.getAllTransactions);
 router.get("/recent", protect, txnController.getRecentTransactions);
 router.get("/summary/monthly", protect, txnController.getMonthlySummary);
+router.get("/savings-balance", protect, txnController.getSavingsBalance);
 // Soft-deleted history (must be declared before "/:id" to avoid shadowing).
 router.get("/deleted", protect, txnController.getDeletedTransactions);
 router.post("/bulk-delete", protect, txnController.bulkDelete);

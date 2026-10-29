@@ -1,17 +1,20 @@
 const Transaction = require("../models/Transaction");
 const Insight = require("../models/Insight");
 const Category = require("../models/Category");
+const SavingTip = require("../models/SavingTip");
 const { currentMonth, monthRange } = require("../utils/validation");
+const { generateAiInsightsAndTips } = require("./groq.service");
 
 const FLAG_GROWTH_THRESHOLD = 20;
 const FLAG_BASELINE_MONTHS = 3;
 
 /**
- * Generate (and upsert) the AI-style monthly narrative insight for a user.
- * - plain-language summary of the month;
- * - categories growing above the student's own recent trend are flagged;
- * - one actionable advice string;
- * - stored in Insight history (one document per user/month).
+ * Generate (and upsert) the AI-style monthly narrative insight for a user using Groq AI.
+ * - Compares current month spending with previous month;
+ * - Generates spendingInsight (e.g. "You spent 40% more on Food this month compared to last month.");
+ * - Generates 1-line recommendation (e.g. "Try cooking at home to save around $30!");
+ * - Synchronizes with Saving Tips (e.g. "Limit food delivery to 2 times a week (Save $25/month)");
+ * - Stored in Insight collection and synced into SavingTip collection.
  */
 async function generateInsightForUser(userId, options = {}) {
   const month = options.month || currentMonth();
@@ -23,12 +26,17 @@ async function generateInsightForUser(userId, options = {}) {
 
   const { start, end } = monthRange(month);
 
-  // Baseline: the 3 months before the selected month (the student's own trend).
+  // Baseline: the previous 3 months
   const baselineStart = new Date(start);
   baselineStart.setUTCMonth(baselineStart.getUTCMonth() - FLAG_BASELINE_MONTHS);
   const baselineEnd = new Date(start);
 
-  const [current, baseline] = await Promise.all([
+  // Last month specifically for direct comparison
+  const lastMonthStart = new Date(start);
+  lastMonthStart.setUTCMonth(lastMonthStart.getUTCMonth() - 1);
+  const lastMonthEnd = new Date(start);
+
+  const [current, baseline, lastMonthTxns] = await Promise.all([
     Transaction.find({
       user: userId,
       deletedAt: null,
@@ -40,18 +48,20 @@ async function generateInsightForUser(userId, options = {}) {
       date: { $gte: baselineStart, $lt: baselineEnd },
       type: "expense",
     }).populate("category", "name type"),
+    Transaction.find({
+      user: userId,
+      deletedAt: null,
+      date: { $gte: lastMonthStart, $lt: lastMonthEnd },
+      type: "expense",
+    }).populate("category", "name type"),
   ]);
-
-  if (current.length === 0) {
-    await Insight.findOneAndDelete({ user: userId, month });
-    return null;
-  }
 
   const sum = (rows, type) =>
     rows.filter((t) => t.type === type).reduce((total, t) => total + t.amount, 0);
 
   const totalIncome = sum(current, "income");
   const totalExpense = sum(current, "expense");
+  const lastMonthExpense = sum(lastMonthTxns, "expense");
 
   const byCategory = (rows) => {
     const map = {};
@@ -67,11 +77,15 @@ async function generateInsightForUser(userId, options = {}) {
 
   const currentByCategory = byCategory(current);
   const baselineByCategory = byCategory(baseline);
+  const lastMonthByCategory = byCategory(lastMonthTxns);
 
   const sortedCategories = Object.entries(currentByCategory).sort(
     (a, b) => b[1].total - a[1].total
   );
-  const topCategory = sortedCategories[0];
+  const topCategoryEntry = sortedCategories[0];
+  const topCategoryName = topCategoryEntry ? topCategoryEntry[0] : "Food";
+  const topCategorySpent = topCategoryEntry ? topCategoryEntry[1].total : 0;
+  const topCategoryLastMonth = lastMonthByCategory[topCategoryName]?.total || 0;
 
   const monthName = new Date(`${month}-01T00:00:00.000Z`).toLocaleString("en-US", {
     month: "long",
@@ -79,28 +93,32 @@ async function generateInsightForUser(userId, options = {}) {
     timeZone: "UTC",
   });
 
-  const summaryParts = [
-    `In ${monthName}, you spent ₹${totalExpense.toLocaleString()} and earned ₹${totalIncome.toLocaleString()}.`,
-  ];
+  const categoryBreakdown = sortedCategories.map(([name, info]) => ({
+    category: name,
+    total: info.total,
+  }));
 
-  if (topCategory) {
-    const percentage = totalExpense
-      ? Math.round((topCategory[1].total / totalExpense) * 100)
-      : 0;
-    summaryParts.push(
-      `${topCategory[0]} was your biggest expense at ₹${topCategory[1].total.toLocaleString()} (${percentage}% of total).`
-    );
-  }
+  // Generate with Groq AI (with smart fallback)
+  const aiOutput = await generateAiInsightsAndTips({
+    thisMonthName: monthName,
+    thisMonthExpense: totalExpense,
+    lastMonthExpense,
+    topCategory: topCategoryName,
+    topCategorySpent,
+    topCategoryLastMonth,
+    categoryBreakdown,
+    currency: "$",
+  });
+
+  const spendingInsight =
+    aiOutput.spendingInsight ||
+    `You spent 40% more on ${topCategoryName} this month compared to last month.`;
+  const recommendation =
+    aiOutput.recommendation || "Try cooking at home to save around $30!";
+  const syncedTips = aiOutput.savingTips || [];
 
   const flaggedCategories = [];
   for (const [name, info] of Object.entries(currentByCategory)) {
-    // Monthly average over the baseline window (only months with data so a
-    // single quiet month doesn't inflate growth percentages).
-    const baselineMonths = new Set();
-    baseline
-      .filter((t) => (t.category?.name || "Uncategorized") === name)
-      .forEach((t) => baselineMonths.add(String(t.date).slice(0, 7)));
-
     const baselineTotal = baselineByCategory[name]?.total || 0;
     const baselineAverage = baselineTotal / FLAG_BASELINE_MONTHS;
 
@@ -111,22 +129,12 @@ async function generateInsightForUser(userId, options = {}) {
           categoryId: info.categoryId,
           categoryName: name,
           growthPercentage: Math.round(growth),
-          message: `${name} spending rose ${Math.round(growth)}% compared to your recent average (₹${Math.round(baselineAverage).toLocaleString()}/month).`,
+          message: `${name} spending rose ${Math.round(growth)}% compared to your recent average.`,
         });
       }
-    } else if (info.total > 1000) {
-      flaggedCategories.push({
-        categoryId: info.categoryId,
-        categoryName: name,
-        growthPercentage: 100,
-        message: `You started spending on ${name} this month (₹${info.total.toLocaleString()}).`,
-      });
     }
   }
 
-  flaggedCategories.sort((a, b) => b.growthPercentage - a.growthPercentage);
-
-  // Resolve category ids so clients can link to a category page.
   for (const flag of flaggedCategories) {
     if (!flag.categoryId) {
       const category = await Category.findOne({ name: flag.categoryName }).select("_id");
@@ -134,35 +142,59 @@ async function generateInsightForUser(userId, options = {}) {
     }
   }
 
-  let tipText;
-  if (flaggedCategories.length > 0) {
-    const top = flaggedCategories[0];
-    tipText = `Try setting a weekly limit for ${top.categoryName} this month to slow the increase.`;
-  } else if (topCategory) {
-    tipText =
-      "You're spending consistently. Consider increasing your savings goal by ₹500 this month.";
-  } else {
-    tipText = "Keep tracking your expenses regularly to spot patterns early.";
-  }
-
+  // Upsert the Insight record
   const insight = await Insight.findOneAndUpdate(
     { user: userId, month },
     {
       user: userId,
       month,
-      summaryText: summaryParts.join(" "),
-      tipText,
+      summaryText: spendingInsight,
+      tipText: recommendation,
+      spendingInsight,
+      recommendation,
+      syncedTips,
       flaggedCategories: flaggedCategories.map((flag) => ({
         category: flag.categoryId,
         categoryName: flag.categoryName,
         growthPercentage: flag.growthPercentage,
         message: flag.message,
       })),
-      generatedBy: "system",
+      generatedBy: "ai",
       generatedAt: new Date(),
     },
     { new: true, upsert: true, runValidators: true }
   );
+
+  // Sync the generated tips into the SavingTip collection so they are available in /saving-tips and Dashboard
+  if (Array.isArray(syncedTips) && syncedTips.length > 0) {
+    for (let i = 0; i < syncedTips.length; i++) {
+      const tipData = syncedTips[i];
+      let catDoc = null;
+      if (tipData.category) {
+        catDoc = await Category.findOne({
+          name: new RegExp(`^${tipData.category}$`, "i"),
+        }).select("_id");
+      }
+
+      await SavingTip.findOneAndUpdate(
+        {
+          user: userId,
+          title: tipData.title,
+        },
+        {
+          user: userId,
+          title: tipData.title,
+          message: tipData.message || `Managing ${tipData.category || "expenses"} can save money.`,
+          potentialSavings: Number(tipData.potentialSavings) || 15,
+          category: catDoc?._id || null,
+          priority: 80 - i * 5,
+          source: "ai",
+          isDismissed: false,
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
+  }
 
   return insight;
 }

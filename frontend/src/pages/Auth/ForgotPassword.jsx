@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, CircleDollarSign, KeyRound, Mail } from "lucide-react";
+import { ArrowRight, CheckCircle2, KeyRound, Mail } from "lucide-react";
 import toast from "react-hot-toast";
 
+import Navbar from "../../components/Navbar/Navbar";
+import { useCurrency } from "../../context/CurrencyContext";
 import API from "../../api/axios";
 import "./Auth.css";
 
@@ -11,6 +13,20 @@ function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [resetToken, setResetToken] = useState("");
   const [emailFailed, setEmailFailed] = useState(false);
+  const { currency, toggleCurrency } = useCurrency();
+  const [theme, setTheme] = useState(() => {
+    const preferences = JSON.parse(localStorage.getItem("student_preferences") || "{}");
+    return preferences.darkMode ? "dark" : "light";
+  });
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    document.documentElement.dataset.theme = nextTheme;
+    document.body.classList.toggle("dark-mode", nextTheme === "dark");
+    const preferences = JSON.parse(localStorage.getItem("student_preferences") || "{}");
+    localStorage.setItem("student_preferences", JSON.stringify({ ...preferences, darkMode: nextTheme === "dark" }));
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -54,130 +70,147 @@ function ForgotPassword() {
   };
 
   return (
-    <main className="auth-page">
-      <div className="auth-container">
-        <section className="auth-side">
-          <Link to="/" className="auth-brand">
-            <span className="auth-brand-icon">
-              <CircleDollarSign size={23} />
-            </span>
-            <span>Campus Coin</span>
-          </Link>
+    <>
+      <Navbar currency={currency} onToggleCurrency={toggleCurrency} theme={theme} onToggleTheme={toggleTheme} />
 
-          <div className="auth-side-content">
-            <p className="auth-small-text">Account Recovery</p>
-            <h1>We'll Help You Get Back In.</h1>
-            <p>
-              Enter the email connected to your account and we'll help
-              you reset your password.
-            </p>
+      <main className="lux-auth">
+        <div className="lux-auth-grid">
+          <section className="lux-auth-side">
+            <div className="lux-auth-blob"></div>
+            <div className="lux-auth-sphere-1"></div>
+            <div className="lux-auth-sphere-2"></div>
 
-            <div className="auth-visual">
-              <div className="auth-visual-circle">
-                <KeyRound size={65} strokeWidth={1.5} />
-              </div>
-              <div className="auth-mini-icon coin-icon">
-                <Mail size={22} />
+            <div className="lux-auth-side-content">
+              <span className="lux-auth-tag">
+                <KeyRound size={14} />
+                ACCOUNT RECOVERY
+              </span>
+
+              <h1 className="lux-auth-title">
+                FORGOT
+                <br />
+                <span>PASSWORD?</span>
+              </h1>
+
+              <p className="lux-auth-text">
+                Enter your registered email address and we will send you a secure link to reset your password.
+              </p>
+
+              <div className="lux-auth-points">
+                <div className="lux-auth-point">
+                  <span>01</span>
+                  <strong>Request a reset link</strong>
+                </div>
+                <div className="lux-auth-point">
+                  <span>02</span>
+                  <strong>Check your email inbox</strong>
+                </div>
+                <div className="lux-auth-point">
+                  <span>03</span>
+                  <strong>Create a new password</strong>
+                </div>
               </div>
             </div>
-          </div>
 
-          <span className="auth-side-footer">
-            Your goals. Your money. Your support.
-          </span>
-        </section>
+            <div className="lux-auth-side-foot">
+              Your goals. Your money. Your future.
+            </div>
+          </section>
 
-        <section className="auth-form-side">
-          <div className="auth-form-wrapper">
-            <Link to="/" className="mobile-auth-brand">
-              <CircleDollarSign size={25} />
-              <span>Campus Coin</span>
-            </Link>
-
-            {!emailSent ? (
-              <>
-                <div className="auth-heading">
-                  <span>Password Recovery</span>
-                  <h2>Forgot your password?</h2>
-                  <p>
-                    Enter your email and we'll send you instructions to reset
-                    your password.
-                  </p>
-                </div>
-
-                <form onSubmit={handleSubmit} noValidate>
-                  <div className="auth-field">
-                    <label htmlFor="recovery-email">Email address</label>
-                    <input
-                      id="recovery-email"
-                      name="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      required
-                    />
+          <section className="lux-auth-form-side">
+            <div className="lux-auth-card">
+              {!emailSent ? (
+                <>
+                  <div className="lux-auth-card-head">
+                    <h2>Forgot Password</h2>
+                    <p>Enter your email to receive recovery instructions</p>
                   </div>
 
-                  <button type="submit" className="auth-submit" disabled={loading}>
-                    {loading ? "Sending..." : "Send Reset Link"}
-                  </button>
-                </form>
+                  <form onSubmit={handleSubmit} noValidate>
+                    <div className="lux-field">
+                      <label htmlFor="recovery-email">EMAIL ADDRESS</label>
+                      <div className="lux-input-wrap">
+                        <Mail size={16} className="lux-input-icon" />
+                        <input
+                          id="recovery-email"
+                          name="email"
+                          type="email"
+                          placeholder="you@example.com"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                <Link to="/login" className="back-login">
-                  <ArrowLeft size={16} />
-                  Back to login
-                </Link>
-              </>
-            ) : (
-              <div className="recovery-success">
-                <div className="success-icon">
-                  <Mail size={28} />
-                </div>
-
-                <span>Check your inbox</span>
-                <h2>Reset link sent</h2>
-
-                {emailFailed ? (
-                  <>
-                    <p style={{ color: "#c0392b" }}>
-                      ⚠️ Email could not be sent from the server. Use the
-                      fallback option below to reset your password.
-                    </p>
-                    <Link
-                      to={`/reset-password?token=${resetToken}`}
-                      className="btn auth-submit"
-                      style={{ marginBottom: "10px" }}
+                    <button
+                      type="submit"
+                      className="lux-submit-btn"
+                      disabled={loading}
                     >
-                      Continue to Reset Password
-                    </Link>
-                  </>
-                ) : (
-                  <p>
-                    Password reset instructions have been sent to your email.
-                    Please check your inbox (and spam folder).
+                      {loading ? "SENDING LINK..." : "SEND RESET LINK"}
+                      {!loading && <ArrowRight size={16} />}
+                    </button>
+                  </form>
+
+                  <p className="lux-auth-bottom">
+                    Remember your password?{" "}
+                    <Link to="/login">Back to login</Link>
                   </p>
-                )}
+                </>
+              ) : (
+                <div className="lux-recovery-success">
+                  <div className="lux-success-badge">
+                    <CheckCircle2 size={40} className="lux-success-icon" />
+                  </div>
 
-                <Link to="/login" className="btn auth-submit">
-                  Back to Login
-                </Link>
+                  <h2>Check Your Inbox</h2>
+                  <p>
+                    A password reset link has been dispatched to your email address.
+                    Please check your inbox (and spam/junk folder).
+                  </p>
 
-                <button
-                  type="button"
-                  className="resend-button"
-                  onClick={() => {
-                    setEmailSent(false);
-                    setResetToken("");
-                    setEmailFailed(false);
-                  }}
-                >
-                  Try another email
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-    </main>
+                  {emailFailed && resetToken && (
+                    <div className="lux-fallback-box">
+                      <p>
+                        ⚠️ Direct SMTP could not deliver the email. Use this local fallback link:
+                      </p>
+                      <Link
+                        to={`/reset-password?token=${resetToken}`}
+                        className="lux-submit-btn"
+                        style={{ marginTop: "12px", textDecoration: "none" }}
+                      >
+                        Proceed to Reset Password
+                      </Link>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <Link
+                      to="/login"
+                      className="lux-submit-btn"
+                      style={{ textDecoration: "none" }}
+                    >
+                      Back to Login
+                    </Link>
+
+                    <button
+                      type="button"
+                      className="lux-resend-btn"
+                      onClick={() => {
+                        setEmailSent(false);
+                        setResetToken("");
+                        setEmailFailed(false);
+                      }}
+                    >
+                      Try another email
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </main>
+    </>
   );
 }
 

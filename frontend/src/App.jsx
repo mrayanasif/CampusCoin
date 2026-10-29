@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import SessionManager from "./components/SessionManager/SessionManager.jsx";
 
 import Home from "./pages/Home/Home.jsx";
 import Login from "./pages/Auth/Login.jsx";
@@ -57,12 +58,14 @@ function App() {
 
   return (
     <>
+      <SessionManager />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/admin/login" element={<AdminLogin />} />
 
         <Route element={<ProtectedRoute role="student"><DashboardLayout /></ProtectedRoute>}>

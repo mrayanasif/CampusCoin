@@ -4,7 +4,7 @@ import {
   ChartNoAxesColumnIncreasing,
   Globe2,
   LayoutDashboard,
-  Lightbulb,
+  Leaf,
   LogOut,
   NotebookPen,
   Sparkles,
@@ -28,7 +28,7 @@ function Sidebar({ isOpen, closeSidebar }) {
     { to: "/budgets", label: "Budgets", icon: WalletCards },
     { to: "/reports", label: "Reports", icon: ChartNoAxesColumnIncreasing },
     { to: "/insights", label: "Insights", icon: Sparkles },
-    { to: "/saving-tips", label: "Saving Tips", icon: Lightbulb },
+    { to: "/saving-tips", label: "Saving Tips", icon: Leaf, isLeaf: true },
     { to: "/categories", label: "Categories", icon: Tags },
     { to: "/notes", label: "Notes", icon: NotebookPen },
     { to: "/profile", label: "Profile", icon: UserRound },
@@ -81,7 +81,7 @@ function Sidebar({ isOpen, closeSidebar }) {
                 className="sidebar-link"
                 onClick={closeSidebar}
               >
-                <Icon size={18} />
+                <Icon size={18} className={item.isLeaf ? "sidebar-leaf-icon" : ""} />
                 <span>{item.label}</span>
               </NavLink>
             );

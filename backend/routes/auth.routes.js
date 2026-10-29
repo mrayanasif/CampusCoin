@@ -14,8 +14,10 @@ const authLimitOptions = {
 
 router.post("/register", rateLimit(authLimitOptions), authController.register);
 router.post("/login", rateLimit(authLimitOptions), authController.login);
-router.post("/logout", protect, authController.logout);
+router.post("/logout", authController.logout);
 router.get("/me", protect, authController.getMe);
+router.get("/session", protect, authController.getSession);
+router.post("/heartbeat", protect, authController.heartbeat);
 
 router.post(
   "/forgot-password",

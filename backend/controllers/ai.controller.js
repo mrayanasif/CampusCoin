@@ -1,10 +1,12 @@
 const AIClassification = require("../models/AIClassification");
 const Transaction = require("../models/Transaction");
+const Category = require("../models/Category");
 const {
   saveCategorizationFeedback,
   shapeSuggestion,
   suggestCategoryForDescription,
 } = require("../services/ai.service");
+const { generateDescriptionSuggestions } = require("../services/groq.service");
 const { isValidObjectId } = require("../utils/validation");
 
 const invalid = (res, message) =>
@@ -19,11 +21,37 @@ exports.categorize = async (req, res, next) => {
     }
 
     const trimmed = description.trim().slice(0, 300);
-    const result = await suggestCategoryForDescription(req.user.id, trimmed);
 
-    // Persist the suggestion so /ai/categorize/feedback can update it and the
-    // student's corrections can bias future suggestions.
-    if (result.category) {
+    const [availableCategories, initialResult] = await Promise.all([
+      Category.find({
+        $or: [{ isDefault: true }, { createdBy: req.user.id }],
+        isActive: true,
+      }).select("name type _id"),
+      suggestCategoryForDescription(req.user.id, trimmed),
+    ]);
+
+    let result = initialResult;
+    let suggestedDescriptions = [];
+
+    try {
+      const groqRes = await generateDescriptionSuggestions(trimmed, availableCategories);
+      if (groqRes && Array.isArray(groqRes.suggestedDescriptions)) {
+        suggestedDescriptions = groqRes.suggestedDescriptions;
+      }
+      if (groqRes && groqRes.suggestedCategory) {
+        const matched = availableCategories.find(
+          (c) => c.name.toLowerCase() === groqRes.suggestedCategory.toLowerCase()
+        );
+        if (matched) {
+          result = { category: matched, confidence: 0.92, learned: false, source: "groq-ai" };
+        }
+      }
+    } catch (e) {
+      console.warn("Groq categorization suggestion failed:", e.message);
+    }
+
+    // Persist the suggestion so /ai/categorize/feedback can update it
+    if (result && result.category) {
       await AIClassification.findOneAndUpdate(
         { user: req.user.id, description: trimmed },
         {
@@ -39,6 +67,7 @@ exports.categorize = async (req, res, next) => {
     res.json({
       success: true,
       ...shapeSuggestion(result),
+      suggestedDescriptions,
       description: trimmed,
     });
   } catch (error) {

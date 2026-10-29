@@ -1,6 +1,7 @@
 const Transaction = require("../models/Transaction");
 const Category = require("../models/Category"); // ← NEW: needed to seed allowance
 const User = require("../models/User"); // ← NEW: needed for summary fallback
+const Budget = require("../models/Budget");
 const ActivityLog = require("../models/ActivityLog");
 const { checkBudgetAlert } = require("../services/budgetAlert.service");
 const { getAccessibleCategory } = require("../utils/categoryAccess");
@@ -44,6 +45,59 @@ async function syncMonthlyAllowance(userId, transaction, categoryName = "") {
     $set: { monthlyAllowance: Number(transaction.amount) },
   });
 }
+
+async function getUserSavings(userId) {
+  const user = await User.findById(userId);
+  if (!user) return 0;
+
+  const totals = await Transaction.aggregate([
+    {
+      $match: {
+        user: user._id,
+        deletedAt: null,
+      },
+    },
+    {
+      $group: {
+        _id: "$type",
+        total: { $sum: "$amount" },
+      },
+    },
+  ]);
+
+  let totalIncome = totals.find((t) => t._id === "income")?.total || 0;
+  const totalExpense = totals.find((t) => t._id === "expense")?.total || 0;
+
+  const hasAllowance = await Transaction.exists({
+    user: user._id,
+    type: "income",
+    deletedAt: null,
+  });
+  if (!hasAllowance && Number(user.monthlyAllowance) > 0) {
+    totalIncome += Number(user.monthlyAllowance);
+  }
+
+  const netSavings = Math.max(0, totalIncome - totalExpense);
+
+  if (typeof user.savings === "number" && user.savings > 0) {
+    return Math.min(user.savings, netSavings);
+  }
+
+  if (netSavings > 0) {
+    await User.findByIdAndUpdate(userId, { $set: { savings: netSavings } });
+  }
+
+  return netSavings;
+}
+
+exports.getSavingsBalance = async (req, res, next) => {
+  try {
+    const savings = await getUserSavings(req.user.id);
+    res.json({ success: true, savings });
+  } catch (e) {
+    next(e);
+  }
+};
 
 const invalid = (res, message) =>
   res.status(400).json({ success: false, message });
@@ -234,6 +288,72 @@ exports.createTransaction = async (req, res, next) => {
       return invalid(res, "Description must be a string");
     }
 
+    let isDeductedFromSavings = false;
+    let actualDeductedAmount = 0;
+
+    if (type === "expense") {
+      const monthStr = parsedDate.toISOString().slice(0, 7);
+      const budget = await Budget.findOne({
+        user: req.user.id,
+        category: resolvedCategory._id,
+        month: monthStr,
+        isActive: true,
+      });
+
+      if (budget) {
+        const { start, end } = monthRange(monthStr);
+        const agg = await Transaction.aggregate([
+          {
+            $match: {
+              user: req.user._id,
+              category: resolvedCategory._id,
+              type: "expense",
+              deletedAt: null,
+              date: { $gte: start, $lt: end },
+            },
+          },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ]);
+
+        const alreadySpent = agg[0]?.total || 0;
+        const projected = alreadySpent + numericAmount;
+
+        if (projected > budget.limitAmount) {
+          const excess = projected - budget.limitAmount;
+          const availableSavings = await getUserSavings(req.user.id);
+
+          if (!req.body.deductFromSavings) {
+            return res.status(400).json({
+              success: false,
+              requiresSavingsDeduction: true,
+              excessAmount: excess,
+              availableSavings,
+              hasEnoughSavings: availableSavings >= excess,
+              message: `This expense exceeds your ${resolvedCategory.name} budget by ${excess}. Excess amount will be deducted from your savings.`,
+            });
+          }
+
+          if (availableSavings < excess) {
+            return res.status(400).json({
+              success: false,
+              insufficientSavings: true,
+              excessAmount: excess,
+              availableSavings,
+              message: `You don't have enough savings! Available savings is ${availableSavings}, but ${excess} is needed.`,
+            });
+          }
+
+          isDeductedFromSavings = true;
+          actualDeductedAmount = excess;
+
+          const remainingSavings = Math.max(0, availableSavings - excess);
+          await User.findByIdAndUpdate(req.user.id, {
+            $set: { savings: remainingSavings },
+          });
+        }
+      }
+    }
+
     const t = await Transaction.create({
       user: req.user.id,
       category: resolvedCategory._id,
@@ -243,6 +363,8 @@ exports.createTransaction = async (req, res, next) => {
       date: parsedDate,
       isRecurring: Boolean(isRecurring),
       source: "manual",
+      deductedFromSavings: isDeductedFromSavings,
+      savingsDeductedAmount: actualDeductedAmount,
     });
 
     await syncMonthlyAllowance(req.user.id, t, resolvedCategory.name);
@@ -322,6 +444,80 @@ exports.updateTransaction = async (req, res, next) => {
       if (error) return invalid(res, error);
       update.category = resolvedCategory._id;
     }
+
+    let isDeductedFromSavings = existing.deductedFromSavings || false;
+    let actualDeductedAmount = existing.savingsDeductedAmount || 0;
+
+    if (nextType === "expense") {
+      const targetDate = update.date || existing.date;
+      const monthStr = targetDate.toISOString().slice(0, 7);
+      const targetCategoryId = update.category || existing.category;
+      const targetAmount = update.amount !== undefined ? update.amount : existing.amount;
+
+      const budget = await Budget.findOne({
+        user: req.user.id,
+        category: targetCategoryId,
+        month: monthStr,
+        isActive: true,
+      });
+
+      if (budget) {
+        const { start, end } = monthRange(monthStr);
+        const agg = await Transaction.aggregate([
+          {
+            $match: {
+              user: req.user._id,
+              _id: { $ne: existing._id },
+              category: targetCategoryId,
+              type: "expense",
+              deletedAt: null,
+              date: { $gte: start, $lt: end },
+            },
+          },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ]);
+
+        const alreadySpent = agg[0]?.total || 0;
+        const projected = alreadySpent + targetAmount;
+
+        if (projected > budget.limitAmount) {
+          const excess = projected - budget.limitAmount;
+          const availableSavings = await getUserSavings(req.user.id);
+
+          if (!body.deductFromSavings) {
+            return res.status(400).json({
+              success: false,
+              requiresSavingsDeduction: true,
+              excessAmount: excess,
+              availableSavings,
+              hasEnoughSavings: availableSavings >= excess,
+              message: `This expense exceeds your budget by ${excess}. Excess amount will be deducted from your savings.`,
+            });
+          }
+
+          if (availableSavings < excess) {
+            return res.status(400).json({
+              success: false,
+              insufficientSavings: true,
+              excessAmount: excess,
+              availableSavings,
+              message: `You don't have enough savings! Available savings is ${availableSavings}, but ${excess} is needed.`,
+            });
+          }
+
+          isDeductedFromSavings = true;
+          actualDeductedAmount = excess;
+
+          const remainingSavings = Math.max(0, availableSavings - excess);
+          await User.findByIdAndUpdate(req.user.id, {
+            $set: { savings: remainingSavings },
+          });
+        }
+      }
+    }
+
+    update.deductedFromSavings = isDeductedFromSavings;
+    update.savingsDeductedAmount = actualDeductedAmount;
 
     const t = await Transaction.findOneAndUpdate(
       { _id: existing._id, user: req.user.id, deletedAt: null },

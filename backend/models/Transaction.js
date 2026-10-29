@@ -83,6 +83,18 @@ const transactionSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    // Set if an expense exceeded its budget and excess was deducted from savings
+    deductedFromSavings: {
+      type: Boolean,
+      default: false,
+    },
+
+    savingsDeductedAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,

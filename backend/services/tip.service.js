@@ -67,11 +67,25 @@ async function generateTipsForUser(userId) {
 
   if (transactions.length === 0) {
     addTip({
-      title: "Start tracking your spending",
-      message: "Add your first few transactions to get personalized saving tips.",
-      potentialSavings: 0,
-      priority: 1,
-      source: "system",
+      title: "Limit food delivery to 2 times a week",
+      message: "Cooking simple meals on weekdays cuts down on delivery fees and restaurant markups.",
+      potentialSavings: 25,
+      priority: 25,
+      source: "ai",
+    });
+    addTip({
+      title: "Use student discounts for transport",
+      message: "Take advantage of student semester passes or bus cards to save on daily commute.",
+      potentialSavings: 15,
+      priority: 20,
+      source: "ai",
+    });
+    addTip({
+      title: "Review unused subscriptions",
+      message: "Audit streaming services and software subscriptions; cancel or split student plans.",
+      potentialSavings: 10,
+      priority: 15,
+      source: "ai",
     });
   } else {
     const expenses = transactions.filter((t) => t.type === "expense");

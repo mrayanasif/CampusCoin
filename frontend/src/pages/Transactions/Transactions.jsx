@@ -11,6 +11,8 @@ import {
   Sparkles,
   Loader2,
   AlertTriangle,
+  AlertCircle,
+  PiggyBank,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -62,6 +64,7 @@ function Transactions() {
 
   // AI categorization
   const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [suggestedDescriptions, setSuggestedDescriptions] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [description, setDescription] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -400,6 +403,7 @@ function Transactions() {
         const res = await API.post("/ai/categorize", { description });
 
         setAiSuggestion(res.data.suggestedCategory || null);
+        setSuggestedDescriptions(res.data.suggestedDescriptions || []);
       } catch (error) {
         console.warn("AI categorization failed:", error);
       } finally {
@@ -422,12 +426,23 @@ function Transactions() {
     toast.success(`Category set to ${activeAiSuggestion.name}`);
   };
 
+  const applyDescriptionSuggestion = (suggestedDesc) => {
+    setDescription(suggestedDesc);
+    if (activeAiSuggestion?.id) {
+      setSelectedCategory(activeAiSuggestion.id);
+      toast.success(`Updated to "${suggestedDesc}" (${activeAiSuggestion.name})`);
+    } else {
+      toast.success(`Updated to "${suggestedDesc}"`);
+    }
+  };
+
   const openAddModal = () => {
     setEditingTransaction(null);
     setDefaultType("income");
     setDescription("");
     setSelectedCategory("");
     setAiSuggestion(null);
+    setSuggestedDescriptions([]);
     setModalOpen(true);
   };
 
@@ -436,6 +451,7 @@ function Transactions() {
     setDescription(transaction.description || "");
     setSelectedCategory(transaction.category?._id || "");
     setAiSuggestion(null);
+    setSuggestedDescriptions([]);
     setModalOpen(true);
   };
 
@@ -445,6 +461,7 @@ function Transactions() {
     setDescription("");
     setSelectedCategory("");
     setAiSuggestion(null);
+    setSuggestedDescriptions([]);
     setMissingBudgetWarning(null);
 
     if (quickAddType) {
@@ -532,6 +549,15 @@ function Transactions() {
         const projected = Math.max(0, alreadySpent) + amount;
 
         if (projected > limit) {
+          const excessAmount = projected - limit;
+          let availableSavings = 0;
+          try {
+            const savingsRes = await API.get("/transactions/savings-balance");
+            availableSavings = Number(savingsRes.data?.savings || 0);
+          } catch (e) {
+            console.error("Could not fetch savings balance:", e);
+          }
+
           setBudgetWarning({
             category:
               displayCategoryName(matchingBudget.budget.category?.name || "Selected category"),
@@ -539,6 +565,13 @@ function Transactions() {
             spent: Math.max(0, alreadySpent),
             attempted: amount,
             projected,
+            excessAmount,
+            availableSavings,
+            hasEnoughSavings: availableSavings >= excessAmount,
+            payload,
+            editing: Boolean(editingTransaction),
+            editingId: editingTransaction?._id,
+            formElement,
           });
 
           return;
@@ -611,6 +644,65 @@ function Transactions() {
         error.response?.data?.message ||
           (editingTransaction ? "Failed to update" : "Failed to add")
       );
+    }
+  };
+
+  const handleConfirmSavingsDeduction = async () => {
+    if (!budgetWarning) return;
+
+    if (budgetWarning.availableSavings < budgetWarning.excessAmount) {
+      setBudgetWarning((prev) => ({
+        ...prev,
+        showInsufficientSavingsAlert: true,
+      }));
+      return;
+    }
+
+    try {
+      const payloadWithSavings = {
+        ...budgetWarning.payload,
+        deductFromSavings: true,
+      };
+
+      if (budgetWarning.editing) {
+        await API.put(`/transactions/${budgetWarning.editingId}`, payloadWithSavings);
+      } else {
+        await API.post("/transactions", payloadWithSavings);
+
+        if (activeAiSuggestion && description) {
+          API.post("/ai/categorize/feedback", {
+            description,
+            userSelectedCategory: budgetWarning.payload.category,
+          }).catch(() => {});
+        }
+      }
+
+      toast.success(
+        `Transaction saved! ${formatCurrency(budgetWarning.excessAmount, currency)} was deducted from your savings.`
+      );
+
+      setBudgetWarning(null);
+      if (budgetWarning.formElement) {
+        budgetWarning.formElement.reset();
+      }
+      closeTransactionModal();
+      await fetchTransactions();
+      window.dispatchEvent(new Event("campuscoin:user-updated"));
+    } catch (error) {
+      if (error.response?.data?.insufficientSavings) {
+        setBudgetWarning((prev) => ({
+          ...prev,
+          showInsufficientSavingsAlert: true,
+          availableSavings: Number(
+            error.response?.data?.availableSavings ?? prev.availableSavings
+          ),
+        }));
+      } else {
+        toast.error(
+          error.response?.data?.message ||
+            "Failed to save transaction with savings deduction."
+        );
+      }
     }
   };
 
@@ -1340,21 +1432,46 @@ function Transactions() {
 
                 {activeAiSuggestion && !aiLoading && (
                   <div className="ai-suggestion-box">
-                    <div className="ai-suggestion-text">
-                      <Sparkles size={14} />
-                      <span>
-                        AI suggests:{" "}
-                        <strong>{activeAiSuggestion.name}</strong>
-                      </span>
+                    <div className="ai-suggestion-top">
+                      <div className="ai-suggestion-text">
+                        <Sparkles size={14} />
+                        <span>
+                          AI suggests category:{" "}
+                          <strong>{activeAiSuggestion.name}</strong>
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={applyAiSuggestion}
+                        className="ai-apply-btn"
+                      >
+                        Apply Category
+                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={applyAiSuggestion}
-                      className="ai-apply-btn"
-                    >
-                      Apply
-                    </button>
+                    {suggestedDescriptions.length > 0 && (
+                      <div className="ai-descriptions-block">
+                        <div className="ai-desc-header">
+                          <Sparkles size={13} className="ai-desc-icon" />
+                          <span>Tap to use a realistic 1-line description:</span>
+                        </div>
+                        <div className="ai-desc-chips">
+                          {suggestedDescriptions.map((descItem, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              className="ai-desc-chip"
+                              onClick={() => applyDescriptionSuggestion(descItem)}
+                              title="Click to use this description and set category"
+                            >
+                              <span className="ai-desc-text">{descItem}</span>
+                              <span className="ai-desc-action">+ Use this</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1629,73 +1746,172 @@ function Transactions() {
             aria-labelledby="budget-warning-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="budget-warning-icon">
-              <AlertTriangle size={30} />
+            <div
+              className={`budget-warning-icon ${
+                budgetWarning.showInsufficientSavingsAlert
+                  ? "savings-danger-icon"
+                  : "savings-warning-icon"
+              }`}
+            >
+              {budgetWarning.showInsufficientSavingsAlert ? (
+                <AlertCircle size={32} />
+              ) : (
+                <AlertTriangle size={32} />
+              )}
             </div>
 
             <div className="budget-warning-content">
-              <h2 id="budget-warning-title">
-                You don't have enough money!
-              </h2>
+              {budgetWarning.showInsufficientSavingsAlert ? (
+                <>
+                  <h2 id="budget-warning-title" style={{ color: "#dc2626" }}>
+                    You don't have enough savings!
+                  </h2>
 
-              <p>
-                This expense will exceed your{" "}
-                <strong>{budgetWarning.category}</strong> budget.
-              </p>
+                  <p>
+                    Your available savings is not sufficient to cover the budget excess for{" "}
+                    <strong>{budgetWarning.category}</strong>.
+                  </p>
 
-              <div className="budget-warning-details">
-                <div>
-                  <span>Monthly budget</span>
-                  <strong>
-                    {formatCurrency(budgetWarning.limit, currency)}
-                  </strong>
-                </div>
+                  <div className="budget-warning-details">
+                    <div>
+                      <span>Monthly Budget</span>
+                      <strong>{formatCurrency(budgetWarning.limit, currency)}</strong>
+                    </div>
 
-                <div>
-                  <span>Already spent</span>
-                  <strong>
-                    {formatCurrency(budgetWarning.spent, currency)}
-                  </strong>
-                </div>
+                    <div>
+                      <span>Required Excess</span>
+                      <strong style={{ color: "#dc2626" }}>
+                        {formatCurrency(budgetWarning.excessAmount, currency)}
+                      </strong>
+                    </div>
 
-                <div>
-                  <span>New expense</span>
-                  <strong>
-                    {formatCurrency(budgetWarning.attempted, currency)}
-                  </strong>
-                </div>
+                    <div>
+                      <span>Your Available Savings</span>
+                      <strong>
+                        {formatCurrency(budgetWarning.availableSavings, currency)}
+                      </strong>
+                    </div>
 
-                <div className="budget-warning-total">
-                  <span>Total after expense</span>
-                  <strong>
-                    {formatCurrency(budgetWarning.projected, currency)}
-                  </strong>
-                </div>
+                    <div className="budget-warning-excess">
+                      <span>Savings Shortfall</span>
+                      <strong>
+                        {formatCurrency(
+                          Math.max(
+                            0,
+                            budgetWarning.excessAmount - budgetWarning.availableSavings
+                          ),
+                          currency
+                        )}
+                      </strong>
+                    </div>
+                  </div>
 
-                <div className="budget-warning-excess">
-                  <span>Budget exceeded by</span>
-                  <strong>
-                    {formatCurrency(
-                      budgetWarning.projected - budgetWarning.limit,
-                      currency
-                    )}
-                  </strong>
-                </div>
-              </div>
+                  <p className="budget-warning-hint" style={{ color: "#dc2626" }}>
+                    Please reduce the expense amount or add income to your savings before proceeding.
+                  </p>
 
-              <p className="budget-warning-hint">
-                Reduce the expense amount or increase your monthly budget
-                before adding this transaction.
-              </p>
+                  <div className="budget-warning-actions" style={{ marginTop: "16px" }}>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      style={{ width: "100%", padding: "12px", borderRadius: "8px" }}
+                      onClick={() => setBudgetWarning(null)}
+                    >
+                      Close / Adjust Expense
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 id="budget-warning-title">
+                    Budget Exceeded: Deduct from Savings?
+                  </h2>
+
+                  <p>
+                    This expense exceeds your <strong>{budgetWarning.category}</strong> monthly budget.
+                    The excess amount of <strong>{formatCurrency(budgetWarning.excessAmount, currency)}</strong> will be deducted from your savings.
+                  </p>
+
+                  <div className="budget-warning-details">
+                    <div>
+                      <span>Monthly budget</span>
+                      <strong>{formatCurrency(budgetWarning.limit, currency)}</strong>
+                    </div>
+
+                    <div>
+                      <span>Already spent</span>
+                      <strong>{formatCurrency(budgetWarning.spent, currency)}</strong>
+                    </div>
+
+                    <div>
+                      <span>New expense</span>
+                      <strong>{formatCurrency(budgetWarning.attempted, currency)}</strong>
+                    </div>
+
+                    <div className="budget-warning-total">
+                      <span>Total after expense</span>
+                      <strong>{formatCurrency(budgetWarning.projected, currency)}</strong>
+                    </div>
+
+                    <div className="budget-warning-excess">
+                      <span>Excess to deduct from savings</span>
+                      <strong>{formatCurrency(budgetWarning.excessAmount, currency)}</strong>
+                    </div>
+
+                    <div>
+                      <span>Available savings</span>
+                      <strong style={{ color: "#16a34a" }}>
+                        {formatCurrency(budgetWarning.availableSavings, currency)}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <p className="budget-warning-hint">
+                    Do you want to proceed and deduct{" "}
+                    <strong>{formatCurrency(budgetWarning.excessAmount, currency)}</strong> from your savings?
+                  </p>
+
+                  <div
+                    className="budget-warning-actions"
+                    style={{ marginTop: "16px", display: "flex", gap: "10px", width: "100%" }}
+                  >
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      style={{
+                        flex: 1,
+                        padding: "11px 16px",
+                        borderRadius: "8px",
+                        border: "1px solid #d4d4d4",
+                        background: "transparent",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                      }}
+                      onClick={() => setBudgetWarning(null)}
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      className="primary-button"
+                      style={{
+                        flex: 1.4,
+                        padding: "11px 16px",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        background: "#0a0a0a",
+                        color: "#C7F36B",
+                        fontWeight: 700,
+                      }}
+                      onClick={handleConfirmSavingsDeduction}
+                    >
+                      Confirm & Deduct
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-
-            <button
-              type="button"
-              className="primary-button budget-warning-close"
-              onClick={() => setBudgetWarning(null)}
-            >
-              Okay, I understand
-            </button>
           </div>
         </div>
       )}

@@ -12,8 +12,8 @@ const isProduction = () => process.env.NODE_ENV === "production";
 const MIN_PASSWORD_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-const generateToken = (id, role) =>
-  jwt.sign({ id, role }, getJwtSecret(), {
+const generateToken = (id, role, tokenVersion = 0) =>
+  jwt.sign({ id, role, tokenVersion }, getJwtSecret(), {
     expiresIn: getJwtExpire(),
   });
 
@@ -151,9 +151,10 @@ exports.login = async (req, res, next) => {
     }
 
     user.lastLogin = new Date();
+    user.lastActive = new Date();
     await user.save();
 
-    const token = generateToken(user._id, user.role);
+    const token = generateToken(user._id, user.role, user.tokenVersion || 0);
     setAuthCookie(res, token);
     res.json({
       success: true,
@@ -167,8 +168,54 @@ exports.login = async (req, res, next) => {
 };
 
 exports.logout = async (req, res) => {
+  try {
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization?.startsWith("Bearer")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+    if (token) {
+      try {
+        const decoded = jwt.decode(token);
+        if (decoded?.id) {
+          await User.findByIdAndUpdate(decoded.id, {
+            $inc: { tokenVersion: 1 },
+            lastActive: new Date(),
+          });
+        }
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.warn("Logout token invalidation:", err.message);
+  }
   res.clearCookie("token", authCookieOptions());
   res.json({ success: true, message: "Logged out successfully" });
+};
+
+exports.heartbeat = async (req, res, next) => {
+  try {
+    await User.findByIdAndUpdate(req.user.id, { lastActive: new Date() });
+    res.json({ success: true, message: "Session extended", lastActive: Date.now() });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getSession = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Session invalid" });
+    }
+    res.json({
+      success: true,
+      active: true,
+      user: publicUser(user),
+      lastActive: user.lastActive,
+      serverTime: Date.now(),
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.getMe = async (req, res, next) => {
@@ -214,7 +261,8 @@ exports.forgotPassword = async (req, res, next) => {
     });
 
     try {
-      await sendPasswordResetEmail(user.email, user.name, token);
+      const clientOrigin = req.get("origin") || req.get("referer");
+      await sendPasswordResetEmail(user.email, user.name, token, clientOrigin);
       console.log(`📧 Reset email sent to: ${user.email}`);
       return res.json({
         success: true,

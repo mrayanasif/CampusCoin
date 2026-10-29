@@ -89,10 +89,14 @@
   height: 48px;
   align-items: center;
   justify-content: center;
-  color: #587D20;
-  background-color: #F4FDE5;
+  color: #16a34a;
+  background-color: #dcfce7;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.leaf-green-icon {
+  color: #16a34a !important;
 }
 
 .tip-card-title {

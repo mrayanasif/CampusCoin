@@ -7,7 +7,7 @@ import {
   Trash2,
   AlertTriangle,
   AlertCircle,
-  Lightbulb,
+  Leaf,
   Sparkles,
   Megaphone,
   Info,
@@ -20,7 +20,7 @@ import "./Notifications.css";
 const TYPE_META = {
   budget_warning: { icon: AlertTriangle, color: "#648D22", label: "Budget Warning" },
   budget_exceeded: { icon: AlertCircle, color: "#dc2626", label: "Budget Exceeded" },
-  saving_tip: { icon: Lightbulb, color: "#648D22", label: "Saving Tip" },
+  saving_tip: { icon: Leaf, color: "#16a34a", label: "Saving Tip" },
   insight: { icon: Sparkles, color: "#7f1d3a", label: "Insight" },
   announcement: { icon: Megaphone, color: "#2563eb", label: "Announcement" },
   system: { icon: Info, color: "#6b7280", label: "System" },
