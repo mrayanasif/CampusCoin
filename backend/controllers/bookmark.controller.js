@@ -39,7 +39,6 @@ exports.create = async (req, res, next) => {
       });
     }
 
-    // Students can only bookmark their own tips/insights (SRS 1.7 isolation).
     if (!(await referenceIsOwned(req.user._id, type, referenceId))) {
       return res
         .status(404)

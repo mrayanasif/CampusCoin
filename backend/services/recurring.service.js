@@ -2,8 +2,7 @@ const RecurringTransaction = require("../models/RecurringTransaction");
 const Transaction = require("../models/Transaction");
 const { checkBudgetAlert } = require("./budgetAlert.service");
 
-// Safety cap so a stale recurring item (e.g. started 2 years ago) is materialised
-// progressively across runs instead of inserting hundreds of rows in one request.
+
 const MAX_OCCURRENCES_PER_RUN = 12;
 
 function advanceDate(date, frequency) {
@@ -14,11 +13,7 @@ function advanceDate(date, frequency) {
   return next;
 }
 
-/**
- * Materialise every due occurrence of a user's active recurring transactions.
- * Idempotent: a transaction already linked to (recurringTransaction, occurrence)
- * is never inserted twice, so repeated calls are safe.
- */
+
 async function processDueRecurringForUser(userId, options = {}) {
   const now = options.now ? new Date(options.now) : new Date();
   const limit = Number(options.limit) || MAX_OCCURRENCES_PER_RUN;
@@ -43,10 +38,8 @@ async function processDueRecurringForUser(userId, options = {}) {
         break;
       }
 
-      // Idempotency choice: the duplicate check intentionally ignores
-      // `deletedAt`, so a soft-deleted recurring occurrence is NOT re-created
-      // by the next sweep (deleting an entry means the student does not want it
-      // back). Restoring the transaction also restores the occurrence.
+
+      
       const alreadyCreated = await Transaction.exists({
         user: userId,
         recurringTransaction: item._id,

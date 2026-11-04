@@ -89,8 +89,6 @@ function normalizePayload(body, { partial = false } = {}) {
 
 exports.getAll = async (req, res, next) => {
   try {
-    // Materialise any due occurrences so the history/reports stay correct even
-    // without a background scheduler (safe to call repeatedly - it is idempotent).
     let processed = null;
     try {
       processed = await processDueRecurringForUser(req.user.id);
@@ -174,7 +172,6 @@ exports.update = async (req, res, next) => {
       payload.category = category._id;
     }
 
-    // Never let the client move a record to another user.
     for (const field of updatableFields) {
       if (payload[field] !== undefined) existing[field] = payload[field];
     }
@@ -196,8 +193,6 @@ exports.toggleActive = async (req, res, next) => {
 
     item.isActive = !item.isActive;
 
-    // Re-activating: if the next occurrence is stale, bring it up to date so a
-    // flood of back-dated transactions is not generated.
     if (item.isActive && item.nextOccurrence < new Date()) {
       item.nextOccurrence = new Date();
     }

@@ -13,6 +13,12 @@ const insightSchema = new mongoose.Schema(
       required: true,
     },
 
+    currency: {
+      type: String,
+      enum: ["PKR", "USD"],
+      default: "PKR",
+    },
+
     summaryText: {
       type: String,
       required: true,

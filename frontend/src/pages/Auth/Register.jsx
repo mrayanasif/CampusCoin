@@ -8,6 +8,7 @@ import {
   User,
   GraduationCap,
   Wallet,
+  PiggyBank,
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
@@ -28,6 +29,9 @@ function Register() {
     return preferences.darkMode ? "dark" : "light";
   });
 
+
+  const [passwordValue, setPasswordValue] = useState("");
+
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
@@ -36,6 +40,24 @@ function Register() {
     const preferences = JSON.parse(localStorage.getItem("student_preferences") || "{}");
     localStorage.setItem("student_preferences", JSON.stringify({ ...preferences, darkMode: nextTheme === "dark" }));
   };
+
+
+  const calculateStrength = (pass) => {
+    if (!pass) return { score: 0, text: "None", color: "#e5e7eb" };
+    let score = 0;
+    if (pass.length >= 8) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[a-z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9\s_\-,]/.test(pass)) score++;
+    if (!/[_\-,]/.test(pass) && !/\s/.test(pass)) score++;
+
+    if (score <= 2) return { score, text: "Weak", color: "#dc2626" }; // Red
+    if (score <= 4) return { score, text: "Medium", color: "#eab308" }; // Yellow
+    return { score, text: "Strong", color: "#16a34a" }; // Green
+  };
+
+  const strength = calculateStrength(passwordValue);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -47,6 +69,8 @@ function Register() {
     const email = form.get("email")?.trim();
     const academicYear = form.get("academicYear");
     const allowance = form.get("allowance");
+    const savingsGoal = form.get("savingsGoal");
+    
     const password = form.get("password") || "";
     const confirmPassword = form.get("confirmPassword") || "";
     const terms = form.get("terms");
@@ -63,6 +87,15 @@ function Register() {
     if (allowance === "") return toast.error("Please enter your monthly allowance");
     if (Number(allowance) < 0)
       return toast.error("Allowance cannot be negative");
+
+    if (savingsGoal === "") return toast.error("Please enter your monthly savings goal");
+    if (Number(savingsGoal) < 0)
+      return toast.error("Savings goal cannot be negative");
+    
+
+    if (Number(savingsGoal) > Number(allowance)) {
+      return toast.error("Savings goal cannot be greater than monthly allowance");
+    }
 
     if (!password) return toast.error("Please create a password");
     if (password.length < 8)
@@ -102,7 +135,7 @@ function Register() {
         password,
         academicYear: academicYearMap[academicYear] || academicYear,
         monthlyAllowance: toPKR(allowance, currency),
-        savingsGoal: 0,
+        savingsGoal: toPKR(savingsGoal, currency),
       });
 
       toast.success("Account created! Please login to continue.");
@@ -249,6 +282,21 @@ function Register() {
                 </div>
 
                 <div className="lux-field">
+                  <label htmlFor="savings-goal">MONTHLY SAVINGS GOAL</label>
+                  <div className="lux-input-wrap">
+                    <PiggyBank size={16} className="lux-input-icon" />
+                    <input
+                      id="savings-goal"
+                      name="savingsGoal"
+                      type="number"
+                      min="0"
+                      placeholder={`${currency === "PKR" ? "₨" : "$"} ${fromPKR(0, currency)}`}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="lux-field">
                   <label htmlFor="register-password">PASSWORD</label>
                   <div className="lux-input-wrap">
                     <Lock size={16} className="lux-input-icon" />
@@ -261,6 +309,8 @@ function Register() {
                       minLength={8}
                       pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9\\s_\\-,])[^\\s_\\-,]{8,}"
                       title="At least 8 characters with uppercase, lowercase, a number, and a special character. Spaces, underscores, hyphens, and commas are not allowed."
+                      value={passwordValue}
+                      onChange={(e) => setPasswordValue(e.target.value)}
                     />
                     <button
                       type="button"
@@ -271,6 +321,21 @@ function Register() {
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
+                  
+                  
+                  {passwordValue && (
+                    <div style={{ marginTop: "10px" }}>
+                      <div style={{ display: "flex", gap: "4px", height: "4px", marginBottom: "6px" }}>
+                        <div style={{ flex: 1, borderRadius: "2px", background: strength.score >= 1 ? strength.color : "#e5e7eb", transition: "all 0.3s" }}></div>
+                        <div style={{ flex: 1, borderRadius: "2px", background: strength.score >= 3 ? strength.color : "#e5e7eb", transition: "all 0.3s" }}></div>
+                        <div style={{ flex: 1, borderRadius: "2px", background: strength.score >= 5 ? strength.color : "#e5e7eb", transition: "all 0.3s" }}></div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
+                        <span style={{ color: "#6b7280" }}>Password Strength:</span>
+                        <span style={{ color: strength.color, fontWeight: 600 }}>{strength.text}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="lux-field">

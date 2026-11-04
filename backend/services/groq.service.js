@@ -3,9 +3,7 @@ const https = require("https");
 const GROQ_API_KEY = process.env.GROQ_API_KEY
 const MODEL_NAME = "qwen/qwen3.8-27b";
 
-/**
- * Call Groq Chat Completions API with a timeout
- */
+
 function callGroqApi(payload) {
   return new Promise((resolve, reject) => {
     const postData = JSON.stringify(payload);
@@ -49,9 +47,7 @@ function callGroqApi(payload) {
   });
 }
 
-/**
- * Generate AI spending insights and linked saving tips using Groq LLM
- */
+
 async function generateAiInsightsAndTips({
   thisMonthName = "this month",
   thisMonthExpense = 0,
@@ -60,9 +56,9 @@ async function generateAiInsightsAndTips({
   topCategorySpent = 0,
   topCategoryLastMonth = 0,
   categoryBreakdown = [],
-  currency = "$",
+  currency = "₨ ",
 }) {
-  // Intelligent baseline calculations
+
   let growthPercent = 0;
   if (topCategoryLastMonth > 0) {
     growthPercent = Math.round(
@@ -71,33 +67,37 @@ async function generateAiInsightsAndTips({
   } else if (topCategorySpent > 0 && lastMonthExpense > 0) {
     growthPercent = Math.round((topCategorySpent / (lastMonthExpense || 1)) * 40);
   } else {
-    growthPercent = 40; // Default illustrative growth
+    growthPercent = 40;
   }
 
-  // Fallback defaults matching user requirements
+
+  const observedCategories = categoryBreakdown
+    .filter((row) => Number(row.total) > 0 && String(row.category || "").trim())
+    .sort((a, b) => Number(b.total) - Number(a.total));
+  const fallbackTips = observedCategories.length
+    ? observedCategories.slice(0, 3).map((row) => {
+        const category = String(row.category).trim();
+        const spent = Number(row.total) || 0;
+        const savings = Math.max(1, Math.round(spent * 0.15));
+        return {
+          title: `Reduce ${category} spending`,
+          message: `Your insight shows ${currency}${spent.toLocaleString()} spent in ${category}. Review the largest purchases in this category and set a weekly cap to target about ${currency}${savings.toLocaleString()} in savings.`,
+          potentialSavings: savings,
+          category,
+        };
+      })
+    : [
+        {
+          title: "Track one flexible expense this week",
+          message: "Your latest insight has no category breakdown yet. Track your flexible purchases this week so the next insight can identify a specific place to save.",
+          potentialSavings: 0,
+          category: "",
+        },
+      ];
   const fallback = {
     spendingInsight: `You spent ${growthPercent}% more on ${topCategory || "Food"} this month compared to last month.`,
-    recommendation: `Try cooking at home to save around ${currency}30!`,
-    savingTips: [
-      {
-        title: "Limit food delivery to 2 times a week",
-        message: "Cooking simple meals on weekdays can cut high delivery and restaurant markups.",
-        potentialSavings: 25,
-        category: "Food",
-      },
-      {
-        title: "Use student discounts for transport",
-        message: "Switching to student bus/train passes lowers daily commute costs.",
-        potentialSavings: 15,
-        category: "Transport",
-      },
-      {
-        title: "Review unused subscriptions",
-        message: "Audit recurring entertainment apps and split family/student plans.",
-        potentialSavings: 10,
-        category: "Subscriptions",
-      },
-    ],
+    recommendation: `Try cooking at home to save around ${currency}${currency.includes("₨") ? Math.max(500, Math.round(thisMonthExpense * 0.03)) : 30}!`,
+    savingTips: fallbackTips,
   };
 
   if (!GROQ_API_KEY) {
@@ -108,11 +108,11 @@ async function generateAiInsightsAndTips({
 Analyze this university student's spending and return valid JSON with:
 1. "spendingInsight": A 1-sentence analysis comparing spending (e.g. "You spent ${growthPercent}% more on ${topCategory} this month compared to last month.").
 2. "recommendation": A practical, encouraging 1-line recommendation with estimated saving (e.g. "Try cooking at home to save around ${currency}30!").
-3. "savingTips": An array of 3 highly actionable, specific student saving tips showing how to manage and save money. Each tip must be an object:
+3. "savingTips": Up to 3 highly actionable saving tips based strictly on the supplied spending insight and category data. Do not offer generic Food, Transport, or subscription advice unless that category appears in the data. If fewer than three categories have spending, return fewer tips rather than inventing categories. Each tip must be an object:
    - "title": e.g. "Limit food delivery to 2 times a week"
    - "message": short practical explanation
    - "potentialSavings": numeric estimated monthly savings amount (e.g. 25)
-   - "category": relevant category name
+   - "category": an exact category name from the supplied category data; use an empty string when no category applies
 
 Data:
 - Month: ${thisMonthName}
@@ -120,6 +120,8 @@ Data:
 - Previous Month Expense: ${currency}${lastMonthExpense}
 - Top Category: ${topCategory} (${currency}${topCategorySpent})
 - Other Categories: ${JSON.stringify(categoryBreakdown.slice(0, 4))}
+
+Each tip must explain what the data shows and give a concrete action for that observed category. Estimate savings from that category's recorded spending, and never claim spending that is absent from the data.
 
 Respond strictly with RAW JSON only. Do not wrap in markdown or backticks.
 `;
@@ -167,9 +169,7 @@ Respond strictly with RAW JSON only. Do not wrap in markdown or backticks.
   }
 }
 
-/**
- * Generate smart 1-line description suggestions and category matching using Groq AI
- */
+
 async function generateDescriptionSuggestions(inputText, availableCategories = []) {
   const trimmed = String(inputText || "").trim();
   if (!trimmed) {
@@ -181,7 +181,7 @@ async function generateDescriptionSuggestions(inputText, availableCategories = [
 
   const lower = trimmed.toLowerCase();
 
-  // Instant rule-based fallbacks for speed and resilience
+
   const ruleFallbacks = {
     food: {
       category: "Food",

@@ -111,14 +111,14 @@
 }
 
 .user-row button:last-child {
-  color: #dc2626;
-  border-color: #fecaca;
+  color: #1a1a1a;
+  border-color: #ede8dd;
 }
 
 .user-row button:last-child:hover {
-  background-color: #dc2626;
-  color: #ffffff;
-  border-color: #dc2626;
+  background-color: #C7F36B;
+  color: #0a0a0a;
+  border-color: #C7F36B;
 }
 
 @media (max-width: 700px) {

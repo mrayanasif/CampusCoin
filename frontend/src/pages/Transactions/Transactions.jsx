@@ -13,21 +13,73 @@ import {
   AlertTriangle,
   AlertCircle,
   PiggyBank,
+  Camera,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
 import { formatCurrency, fromPKR, toPKR, useCurrency } from "../../context/CurrencyContext";
 import { displayCategoryName, sortExpenseCategories } from "../../utils/categoryPresentation";
+import AdminConfirmModal from "../../components/AdminConfirmModal/AdminConfirmModal";
 import { Skeleton } from "../../components/Skeleton/Skeleton";
 import "./Transactions.css";
 
 const PAGE_SIZE = 20;
 
-// Returns today's LOCAL date in YYYY-MM-DD format.
-// Using en-CA (Canadian English) is the cleanest way to get ISO-style YYYY-MM-DD
-// in the user's local timezone (toISOString would give the UTC date).
 const getTodayString = () => new Date().toLocaleDateString("en-CA");
+
+function extractReceiptFields(text) {
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  const totalPatterns = [
+    /(?:grand\s*total|net\s*(?:total|payable)|amount\s*(?:due|paid)|total\s*(?:amount|due)?)\s*[:\-]?\s*(?:rs\.?|pkr|₨|\$)?\s*([\d,]+(?:\.\d{1,2})?)/gi,
+  ];
+  const totals = [];
+  for (const pattern of totalPatterns) {
+    for (const match of text.matchAll(pattern)) {
+      const amount = Number(match[1].replace(/,/g, ""));
+      if (Number.isFinite(amount) && amount > 0) totals.push(amount);
+    }
+  }
+
+  let amount = totals.at(-1) || "";
+  if (!amount) {
+    const currencyAmounts = [...String(text || "").matchAll(/(?:rs\.?|pkr|₨)\s*([\d,]+(?:\.\d{1,2})?)/gi)]
+      .map((match) => Number(match[1].replace(/,/g, "")))
+      .filter((value) => Number.isFinite(value) && value > 0);
+    amount = currencyAmounts.length ? Math.max(...currencyAmounts) : "";
+  }
+
+  const dateMatch = String(text || "").match(
+    /\bdate\s*[:\-]?\s*(\d{1,2}\s+[a-z]{3,9}\s+\d{4}|\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4})/i
+  );
+  let date = getTodayString();
+  if (dateMatch) {
+    const value = dateMatch[1];
+    const slashDate = value.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
+    const parsed = slashDate
+      ? new Date(Number(slashDate[3]), Number(slashDate[2]) - 1, Number(slashDate[1]))
+      : new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      date = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
+    }
+  }
+
+  const merchant = lines.find((line) =>
+    line.length > 2 && !/^(receipt|invoice|tax invoice)$/i.test(line)
+  ) || "Receipt purchase";
+  const itemLine = lines.find((line) => /biryani|burger|pizza|meal|food|grocery|tea|coffee/i.test(line));
+  const item = itemLine?.replace(/(?:rs\.?|pkr|₨|\$)\s*[\d,.]+/gi, "").replace(/\s+/g, " ").trim();
+  const description = [merchant, item && item.toLowerCase() !== merchant.toLowerCase() ? item : ""]
+    .filter(Boolean)
+    .join(" - ")
+    .slice(0, 120);
+
+  return { amount, date, description };
+}
 
 function Transactions() {
   const { currency } = useCurrency();
@@ -46,42 +98,52 @@ function Transactions() {
     quickAddType === "expense" ? "expense" : "income"
   );
   const [editingTransaction, setEditingTransaction] = useState(null);
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const [deletingTransaction, setDeletingTransaction] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-
-  // Budget warning modal (over-limit)
+  const [transactionFormError, setTransactionFormError] = useState("");
   const [budgetWarning, setBudgetWarning] = useState(null);
-
-  // Alert when the expense category has no matching budget
-  const [missingBudgetWarning, setMissingBudgetWarning] = useState(null);
-
-  // Deleted transactions
   const [deletedSupported, setDeletedSupported] = useState(false);
   const [deletedTransactions, setDeletedTransactions] = useState([]);
   const [deletedLoading, setDeletedLoading] = useState(false);
-
-  // AI categorization
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [suggestedDescriptions, setSuggestedDescriptions] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [description, setDescription] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-
-  // CSV
   const [csvFile, setCsvFile] = useState(null);
   const [csvImporting, setCsvImporting] = useState(false);
   const [csvResult, setCsvResult] = useState(null);
+  const [csvDeleteConfirmOpen, setCsvDeleteConfirmOpen] = useState(false);
+  const [deletingCsvTransactions, setDeletingCsvTransactions] = useState(false);
+  const [deletedDeleteConfirmOpen, setDeletedDeleteConfirmOpen] = useState(false);
+  const [permanentlyDeletingTransactions, setPermanentlyDeletingTransactions] = useState(false);
   const [csvPreviewRows, setCsvPreviewRows] = useState([]);
   const [csvPreviewLoading, setCsvPreviewLoading] = useState(false);
   const [csvPreviewSource, setCsvPreviewSource] = useState("");
-
-  // Recurring entries
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [receiptPreview, setReceiptPreview] = useState("");
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [receiptReading, setReceiptReading] = useState(false);
+  const [receiptProgress, setReceiptProgress] = useState(0);
+  const [receiptSaving, setReceiptSaving] = useState(false);
+  const [receiptDraft, setReceiptDraft] = useState({
+    amount: "",
+    date: getTodayString(),
+    description: "",
+    category: "",
+  });
   const [recurringItems, setRecurringItems] = useState([]);
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [recurringLoading, setRecurringLoading] = useState(true);
   const [recurringType, setRecurringType] = useState("expense");
+  const [editingRecurring, setEditingRecurring] = useState(null);
+  const [recurringToDelete, setRecurringToDelete] = useState(null);
+  const [savingRecurring, setSavingRecurring] = useState(false);
+  const [deletingRecurring, setDeletingRecurring] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem("token")) {
@@ -158,13 +220,22 @@ function Transactions() {
     };
   }, [navigate]);
 
-  const fetchTransactions = async ({ page = 1, append = false } = {}) => {
+  const fetchTransactions = async ({
+    page = 1,
+    append = false,
+    transactionFilter = filter,
+    showLoader = transactions.length === 0,
+  } = {}) => {
     try {
       if (append) setLoadingMore(true);
-      else setLoading(true);
+      else if (showLoader) setLoading(true);
 
       const res = await API.get("/transactions", {
-        params: { page, limit: PAGE_SIZE },
+        params: {
+          page,
+          limit: PAGE_SIZE,
+          ...(transactionFilter === "csv" ? { source: "csv" } : {}),
+        },
       });
 
       const data = res.data || {};
@@ -193,7 +264,7 @@ function Transactions() {
       toast.error(error.response?.data?.message || "Failed to load");
     } finally {
       if (append) setLoadingMore(false);
-      else setLoading(false);
+      else if (showLoader) setLoading(false);
     }
   };
 
@@ -203,7 +274,72 @@ function Transactions() {
     fetchTransactions({
       page: pagination.page + 1,
       append: true,
+      transactionFilter: filter,
     });
+  };
+
+  const selectTransactionFilter = (nextFilter) => {
+    setFilter(nextFilter);
+    if (nextFilter !== "deleted") {
+      fetchTransactions({ page: 1, transactionFilter: nextFilter });
+    }
+  };
+
+  const deleteAllCsvTransactions = async () => {
+    let deletedCount = 0;
+    try {
+      setDeletingCsvTransactions(true);
+      const response = await API.get("/transactions", {
+        params: { source: "csv" },
+      });
+      const ids = (response.data?.transactions || []).map((transaction) => transaction._id);
+
+      if (ids.length === 0) {
+        setCsvDeleteConfirmOpen(false);
+        toast("There are no CSV transactions to delete.");
+        await fetchTransactions({ page: 1, transactionFilter: "csv" });
+        return;
+      }
+
+      for (let index = 0; index < ids.length; index += 200) {
+        const result = await API.post("/transactions/bulk-delete", {
+          ids: ids.slice(index, index + 200),
+        });
+        deletedCount += Number(result.data?.deletedCount || 0);
+      }
+
+      setCsvDeleteConfirmOpen(false);
+      toast.success(`${deletedCount} CSV transaction(s) moved to Deleted`);
+      await Promise.all([
+        fetchTransactions({ page: 1, transactionFilter: "csv" }),
+        loadDeletedTransactions(),
+      ]);
+      window.dispatchEvent(new Event("campuscoin:user-updated"));
+    } catch (error) {
+      const message = error.response?.data?.message || "Could not delete CSV transactions";
+      toast.error(
+        deletedCount > 0
+          ? `${deletedCount} transaction(s) moved to Deleted. ${message}`
+          : message
+      );
+    } finally {
+      setDeletingCsvTransactions(false);
+    }
+  };
+
+  const permanentlyDeleteAllDeleted = async () => {
+    try {
+      setPermanentlyDeletingTransactions(true);
+      const response = await API.delete("/transactions/deleted/permanent");
+      setDeletedDeleteConfirmOpen(false);
+      setDeletedTransactions([]);
+      toast.success(response.data?.message || "Deleted transactions permanently removed");
+      window.dispatchEvent(new Event("campuscoin:user-updated"));
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not permanently delete transactions");
+    } finally {
+      setPermanentlyDeletingTransactions(false);
+    }
   };
 
   const loadDeletedTransactions = async () => {
@@ -239,6 +375,7 @@ function Transactions() {
       toast.success("Transaction restored");
 
       await Promise.all([loadDeletedTransactions(), fetchTransactions()]);
+      window.dispatchEvent(new Event("campuscoin:user-updated"));
     } catch (error) {
       if (error.response?.status === 404) {
         setDeletedSupported(false);
@@ -249,7 +386,6 @@ function Transactions() {
     }
   };
 
-  // Recurring entries
   useEffect(() => {
     if (!localStorage.getItem("token")) return;
 
@@ -310,25 +446,42 @@ function Transactions() {
     if (!frequency) return toast.error("Please choose a frequency");
     if (!startDate) return toast.error("Please choose a start date");
 
-    try {
-      await API.post("/recurring", {
-        type,
-        amount,
-        category,
-        frequency,
-        description: recurringDescription || "",
-        startDate,
-        nextOccurrence: startDate,
-      });
+    const payload = {
+      type,
+      amount,
+      category,
+      frequency,
+      description: recurringDescription || "",
+      startDate,
+      ...(editingRecurring ? { nextOccurrence: startDate } : {}),
+    };
 
-      toast.success("Recurring entry added");
+    try {
+      setSavingRecurring(true);
+      if (editingRecurring) {
+        await API.put(`/recurring/${editingRecurring._id}`, payload);
+      } else {
+        await API.post("/recurring", { ...payload, nextOccurrence: startDate });
+      }
+
+      toast.success(editingRecurring ? "Recurring entry updated" : "Recurring entry added");
+      setEditingRecurring(null);
+      setRecurringType("expense");
       formElement.reset();
-      refreshRecurring();
+      await refreshRecurring();
     } catch (error) {
       toast.error(
-        error.response?.data?.message || "Failed to add recurring entry"
+        error.response?.data?.message || "Failed to save recurring entry"
       );
+    } finally {
+      setSavingRecurring(false);
     }
+  };
+
+  const editRecurring = (item) => {
+    setEditingRecurring(item);
+    setRecurringType(item.type);
+    setRecurringOpen(true);
   };
 
   const toggleRecurring = async (id) => {
@@ -348,17 +501,20 @@ function Transactions() {
     }
   };
 
-  const deleteRecurring = async (id) => {
-    if (!window.confirm("Delete this recurring entry?")) return;
-
+  const deleteRecurring = async () => {
+    if (!recurringToDelete || deletingRecurring) return;
     try {
-      await API.delete(`/recurring/${id}`);
-
-      setRecurringItems((curr) => curr.filter((item) => item._id !== id));
+      setDeletingRecurring(true);
+      await API.delete(`/recurring/${recurringToDelete._id}`);
+      setRecurringItems((curr) => curr.filter((item) => item._id !== recurringToDelete._id));
+      if (editingRecurring?._id === recurringToDelete._id) setEditingRecurring(null);
+      setRecurringToDelete(null);
 
       toast.success("Recurring entry deleted");
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
+    } finally {
+      setDeletingRecurring(false);
     }
   };
 
@@ -376,13 +532,14 @@ function Transactions() {
   };
 
   const filteredTransactions = transactions.filter((t) => {
-    const matchesType = filter === "all" || t.type === filter;
+    const matchesType = filter === "all" || filter === "csv" || t.type === filter;
+    const matchesSource = filter !== "csv" || t.source === "csv";
 
     const matchesSearch =
       (t.description || "").toLowerCase().includes(search.toLowerCase()) ||
       (t.category?.name || "").toLowerCase().includes(search.toLowerCase());
 
-    return matchesType && matchesSearch;
+    return matchesType && matchesSource && matchesSearch;
   });
 
   const deletedVisible = deletedTransactions.filter(
@@ -391,7 +548,6 @@ function Transactions() {
       (t.category?.name || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  // AI categorization
   useEffect(() => {
     if (editingTransaction) return;
     if (!description || description.trim().length < 3) return;
@@ -457,21 +613,21 @@ function Transactions() {
 
   const closeTransactionModal = () => {
     setModalOpen(false);
+    setTransactionFormError("");
     setEditingTransaction(null);
     setDescription("");
     setSelectedCategory("");
     setAiSuggestion(null);
     setSuggestedDescriptions([]);
-    setMissingBudgetWarning(null);
 
     if (quickAddType) {
       setSearchParams({}, { replace: true });
     }
   };
 
-  // Check the budget before adding or editing an expense.
   const addTransaction = async (event) => {
     event.preventDefault();
+    setTransactionFormError("");
 
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
@@ -483,22 +639,21 @@ function Transactions() {
     const date = form.get("date");
     const recurring = form.get("recurring") === "on";
 
-    if (!type) return toast.error("Please choose income or expense");
-    if (!amountValue) return toast.error("Please enter an amount");
+    if (!type) return setTransactionFormError("Please choose income or expense.");
+    if (!amountValue) return setTransactionFormError("Please enter an amount.");
 
     const amount = toPKR(amountValue, currency);
 
     if (!Number.isFinite(amount) || amount <= 0) {
-      return toast.error("Amount must be greater than zero");
+      return setTransactionFormError("Amount must be greater than zero.");
     }
 
-    if (!category) return toast.error("Please choose a category");
-    if (!date) return toast.error("Please choose a date");
+    if (!category) return setTransactionFormError("Please choose a category.");
+    if (!date) return setTransactionFormError("Please choose a date.");
 
-    // NEW: prevent future dates (expense dates must be today or a previous date)
     if (date > getTodayString()) {
-      return toast.error(
-        "Date cannot be in the future. Please pick today or a previous date."
+      return setTransactionFormError(
+        "Date cannot be in the future. Please pick today or an earlier date."
       );
     }
 
@@ -523,61 +678,54 @@ function Transactions() {
           return String(budgetCategoryId) === String(category);
         });
 
-        // Expense category must have a matching budget
-        if (!matchingBudget) {
-          const categoryName =
-            categories.find((c) => c._id === category)?.name ||
-            "this category";
+        if (matchingBudget) {
+          const limit = Number(matchingBudget.budget.limitAmount || 0);
+          let alreadySpent = Number(matchingBudget.used || 0);
 
-          setMissingBudgetWarning({ category: categoryName });
-          return; // stop — do not save
-        }
-
-        const limit = Number(matchingBudget.budget.limitAmount || 0);
-        let alreadySpent = Number(matchingBudget.used || 0);
-
-        if (
-          editingTransaction &&
-          editingTransaction.type === "expense" &&
-          String(
-            editingTransaction.category?._id || editingTransaction.category
-          ) === String(category)
-        ) {
-          alreadySpent -= Number(editingTransaction.amount || 0);
-        }
-
-        const projected = Math.max(0, alreadySpent) + amount;
-
-        if (projected > limit) {
-          const excessAmount = projected - limit;
-          let availableSavings = 0;
-          try {
-            const savingsRes = await API.get("/transactions/savings-balance");
-            availableSavings = Number(savingsRes.data?.savings || 0);
-          } catch (e) {
-            console.error("Could not fetch savings balance:", e);
+          if (
+            editingTransaction &&
+            editingTransaction.type === "expense" &&
+            String(
+              editingTransaction.category?._id || editingTransaction.category
+            ) === String(category)
+          ) {
+            alreadySpent -= Number(editingTransaction.amount || 0);
           }
 
-          setBudgetWarning({
-            category:
-              displayCategoryName(matchingBudget.budget.category?.name || "Selected category"),
-            limit,
-            spent: Math.max(0, alreadySpent),
-            attempted: amount,
-            projected,
-            excessAmount,
-            availableSavings,
-            hasEnoughSavings: availableSavings >= excessAmount,
-            payload,
-            editing: Boolean(editingTransaction),
-            editingId: editingTransaction?._id,
-            formElement,
-          });
+          const projected = Math.max(0, alreadySpent) + amount;
 
-          return;
+          if (projected > limit) {
+            const excessAmount = projected - limit;
+            let availableSavings = 0;
+            try {
+              const savingsRes = await API.get("/transactions/savings-balance");
+              availableSavings = Number(savingsRes.data?.savings || 0);
+            } catch (e) {
+              console.error("Could not fetch savings balance:", e);
+            }
+
+            setBudgetWarning({
+              category:
+                displayCategoryName(matchingBudget.budget.category?.name || "Selected category"),
+              limit,
+              spent: Math.max(0, alreadySpent),
+              attempted: amount,
+              projected,
+              excessAmount,
+              availableSavings,
+              hasEnoughSavings: availableSavings >= excessAmount,
+              showInsufficientSavingsAlert: availableSavings < excessAmount,
+              payload,
+              editing: Boolean(editingTransaction),
+              editingId: editingTransaction?._id,
+              formElement,
+            });
+
+            return;
+          }
         }
       } catch (error) {
-        toast.error(
+        setTransactionFormError(
           error.response?.data?.message ||
             "Unable to verify your budget. Please try again."
         );
@@ -639,8 +787,9 @@ function Transactions() {
       formElement.reset();
       closeTransactionModal();
       await fetchTransactions();
+      window.dispatchEvent(new Event("campuscoin:user-updated"));
     } catch (error) {
-      toast.error(
+      setTransactionFormError(
         error.response?.data?.message ||
           (editingTransaction ? "Failed to update" : "Failed to add")
       );
@@ -685,7 +834,8 @@ function Transactions() {
       if (budgetWarning.formElement) {
         budgetWarning.formElement.reset();
       }
-      closeTransactionModal();
+      if (budgetWarning.receipt) closeReceiptModal();
+      else closeTransactionModal();
       await fetchTransactions();
       window.dispatchEvent(new Event("campuscoin:user-updated"));
     } catch (error) {
@@ -706,9 +856,10 @@ function Transactions() {
     }
   };
 
-  const deleteTransaction = async (id) => {
-    if (!window.confirm("Delete this transaction?")) return;
-
+  const deleteTransaction = async () => {
+    if (!transactionToDelete || deletingTransaction) return;
+    const id = transactionToDelete;
+    setDeletingTransaction(true);
     try {
       await API.delete(`/transactions/${id}`);
 
@@ -719,12 +870,15 @@ function Transactions() {
       );
 
       setTransactions((curr) => curr.filter((t) => t._id !== id));
+      setTransactionToDelete(null);
+      window.dispatchEvent(new Event("campuscoin:user-updated"));
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
+    } finally {
+      setDeletingTransaction(false);
     }
   };
 
-  // CSV helpers
   const parseCSV = (text) => {
     const lines = text.trim().split("\n");
     if (lines.length < 2) return [];
@@ -752,13 +906,6 @@ function Transactions() {
     return rows;
   };
 
-  const findCategoryByName = (name) =>
-    categories.find(
-      (category) =>
-        String(category.name).toLowerCase() ===
-        String(name || "").toLowerCase()
-    );
-
   const buildPreviewRows = (baseRows, suggestions) =>
     baseRows.map((row, index) => {
       const suggestion =
@@ -770,11 +917,19 @@ function Transactions() {
           return rowNumber - 1 === index || rowNumber === index;
         }) || suggestions[index];
 
-      const matchedCategory = findCategoryByName(row.category);
+      const matchingCategories = categories.filter(
+        (category) => String(category.name).trim().toLowerCase() === String(row.category || "").trim().toLowerCase()
+      );
+      const csvType = row.type === "income" ? "income" : "expense";
+      const matchedCategory =
+        matchingCategories.find((category) => category.type === csvType) ||
+        matchingCategories[0];
+      const correctedType = matchedCategory?.type || csvType;
 
       return {
         ...row,
-        type: row.type === "income" ? "income" : "expense",
+        type: correctedType,
+        typeCorrectedFrom: correctedType !== csvType ? csvType : "",
         amount: row.amount || "",
         date: row.date || getTodayString(),
         description: row.description || "",
@@ -881,22 +1036,7 @@ function Transactions() {
 
   const importCsv = async () => {
     if (!csvFile) return toast.error("Please select a CSV file");
-
-    if (!csvPreviewRows.length) {
-      return toast.error("Please wait for the CSV preview to load");
-    }
-
-    const missingCategoryRows = csvPreviewRows.filter(
-      (row) => !row.selectedCategory && !row.category
-    );
-
-    if (missingCategoryRows.length) {
-      return toast.error(
-        `Assign a category to ${missingCategoryRows.length} row${
-          missingCategoryRows.length > 1 ? "s" : ""
-        } before importing`
-      );
-    }
+    if (!csvPreviewRows.length) return toast.error("Please wait for the CSV preview to load");
 
     try {
       setCsvImporting(true);
@@ -921,6 +1061,7 @@ function Transactions() {
         success: true,
         message: res.data.message,
         batch: res.data.batch,
+        errors: res.data.batch?.errors || [],
       });
 
       toast.success(res.data.message);
@@ -928,7 +1069,13 @@ function Transactions() {
     } catch (error) {
       const message = error.response?.data?.message || "Import failed";
 
-      setCsvResult({ success: false, message });
+      setCsvResult({
+        success: false,
+        message,
+        errors: Array.isArray(error.response?.data?.errors)
+          ? error.response.data.errors
+          : [],
+      });
       toast.error(message);
     } finally {
       setCsvImporting(false);
@@ -951,6 +1098,149 @@ function Transactions() {
     anchor.click();
 
     URL.revokeObjectURL(url);
+  };
+
+  const closeReceiptModal = () => {
+    setReceiptModalOpen(false);
+    if (receiptPreview) URL.revokeObjectURL(receiptPreview);
+    setReceiptPreview("");
+    setReceiptFile(null);
+    setReceiptReading(false);
+    setReceiptProgress(0);
+    setReceiptDraft({ amount: "", date: getTodayString(), description: "", category: "" });
+  };
+
+  const handleReceiptFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return toast.error("Choose a receipt image");
+    if (file.size > 10 * 1024 * 1024) return toast.error("Receipt image must be smaller than 10 MB");
+
+    if (receiptPreview) URL.revokeObjectURL(receiptPreview);
+    setReceiptFile(file);
+    setReceiptPreview(URL.createObjectURL(file));
+    setReceiptReading(true);
+    setReceiptProgress(0);
+    setReceiptDraft({ amount: "", date: getTodayString(), description: "", category: "" });
+
+    let worker;
+    try {
+      const { createWorker } = await import("tesseract.js");
+      worker = await createWorker("eng", 1, {
+        logger: (progress) => {
+          if (progress.status === "recognizing text") {
+            setReceiptProgress(Math.round((progress.progress || 0) * 100));
+          }
+        },
+      });
+      const { data } = await worker.recognize(file);
+      const extracted = extractReceiptFields(data.text || "");
+      setReceiptDraft((current) => ({
+        ...current,
+        ...extracted,
+        amount: extracted.amount
+          ? String(Math.round(fromPKR(extracted.amount, currency) * 100) / 100)
+          : "",
+      }));
+
+      if (extracted.description) {
+        try {
+          const suggestionRes = await API.post("/ai/categorize", {
+            description: extracted.description,
+          });
+          const suggestion = suggestionRes.data?.suggestedCategory;
+          const matched = expenseCategories.find(
+            (category) => String(category._id) === String(suggestion?.id) ||
+              category.name?.toLowerCase() === suggestion?.name?.toLowerCase()
+          );
+          if (matched) {
+            setReceiptDraft((current) => ({ ...current, category: matched._id }));
+          }
+        } catch {
+        }
+      }
+
+      if (extracted.amount) toast.success("Receipt scanned. Review the details before saving.");
+      else toast("Receipt scanned. Please enter the total amount manually.");
+    } catch (error) {
+      console.error("Receipt OCR failed:", error);
+      toast.error("Could not read this image. Try a clearer, well-lit receipt.");
+    } finally {
+      if (worker) {
+        try {
+          await worker.terminate();
+        } catch (error) {
+          console.warn("Could not stop receipt OCR worker:", error);
+        }
+      }
+      setReceiptReading(false);
+    }
+  };
+
+  const saveReceiptTransaction = async (event) => {
+    event.preventDefault();
+    const amount = toPKR(receiptDraft.amount, currency);
+    if (!receiptDraft.category) return toast.error("Choose an expense category");
+    if (!Number.isFinite(amount) || amount <= 0) return toast.error("Enter the receipt total");
+    if (!receiptDraft.date) return toast.error("Choose the transaction date");
+    if (receiptDraft.date > getTodayString()) return toast.error("Date cannot be in the future");
+
+    const payload = {
+      type: "expense",
+      amount,
+      category: receiptDraft.category,
+      description: receiptDraft.description.trim() || receiptFile?.name || "Receipt expense",
+      date: receiptDraft.date,
+      isRecurring: false,
+    };
+
+    try {
+      setReceiptSaving(true);
+      const month = receiptDraft.date.slice(0, 7);
+      const budgetRes = await API.get("/budgets/status", { params: { month } });
+      const matchingBudget = (budgetRes.data.status || []).find((item) =>
+        String(item.budget?.category?._id || item.budget?.category) === String(payload.category)
+      );
+      if (!matchingBudget) {
+        const categoryName = expenseCategories.find((category) => String(category._id) === String(payload.category))?.name || "this category";
+        toast.error(`Set a ${month} budget for ${displayCategoryName(categoryName)} before saving this receipt.`);
+        return;
+      }
+
+      const projected = Number(matchingBudget.used || 0) + amount;
+      const limit = Number(matchingBudget.budget?.limitAmount || 0);
+      if (projected > limit) {
+        const savingsRes = await API.get("/transactions/savings-balance").catch(() => ({ data: { savings: 0 } }));
+        const availableSavings = Number(savingsRes.data?.savings || 0);
+        setBudgetWarning({
+          category: displayCategoryName(matchingBudget.budget?.category?.name || "Selected category"),
+          limit,
+          spent: Number(matchingBudget.used || 0),
+          attempted: amount,
+          projected,
+          excessAmount: projected - limit,
+          availableSavings,
+          hasEnoughSavings: availableSavings >= projected - limit,
+          showInsufficientSavingsAlert: availableSavings < projected - limit,
+          payload,
+          editing: false,
+          receipt: true,
+          formElement: null,
+        });
+        return;
+      }
+
+      await API.post("/transactions", payload);
+      toast.success("Receipt transaction added");
+      closeReceiptModal();
+      await fetchTransactions();
+      window.dispatchEvent(new Event("campuscoin:user-updated"));
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not save receipt transaction");
+    } finally {
+      setReceiptSaving(false);
+    }
   };
 
   const closeCsvModal = () => {
@@ -989,6 +1279,15 @@ function Transactions() {
 
           <button
             type="button"
+            className="secondary-button receipt-scan-trigger"
+            onClick={() => setReceiptModalOpen(true)}
+          >
+            <Camera size={16} />
+            Scan Receipt
+          </button>
+
+          <button
+            type="button"
             className="primary-button"
             onClick={openAddModal}
           >
@@ -1000,14 +1299,16 @@ function Transactions() {
 
       <div className="transaction-toolbar">
         <div className="transaction-tabs">
-          {["all", "income", "expense"].map((type) => (
+          {["all", "income", "expense", "csv"].map((type) => (
             <button
               type="button"
               key={type}
               className={filter === type ? "active" : ""}
-              onClick={() => setFilter(type)}
+              onClick={() => selectTransactionFilter(type)}
             >
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+              {type === "csv"
+                ? `CSV${filter === "csv" && pagination ? ` (${pagination.total})` : ""}`
+                : type.charAt(0).toUpperCase() + type.slice(1)}
             </button>
           ))}
 
@@ -1037,7 +1338,7 @@ function Transactions() {
       {filter === "deleted" && (
         <p className="deleted-hint">
           Deleted items are excluded from reports, budgets and insights.
-          Restore them to include them again.
+          Restore them to include them again. <strong>Note: Transactions here will be automatically deleted after 30 days.</strong>
         </p>
       )}
 
@@ -1049,7 +1350,33 @@ function Transactions() {
               <th>Category</th>
               <th>Description</th>
               <th>Amount</th>
-              <th>Action</th>
+              <th>
+                <div className="transaction-action-heading">
+                  <span>Action</span>
+                  {filter === "csv" && !loading && pagination?.total > 0 && (
+                    <button
+                      type="button"
+                      className="csv-delete-all-btn"
+                      onClick={() => setCsvDeleteConfirmOpen(true)}
+                      aria-label="Delete all CSV-imported transactions"
+                      title="Delete all CSV-imported transactions"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                  {filter === "deleted" && !deletedLoading && deletedTransactions.length > 0 && (
+                    <button
+                      type="button"
+                      className="csv-delete-all-btn deleted-delete-all-btn"
+                      onClick={() => setDeletedDeleteConfirmOpen(true)}
+                      aria-label="Permanently delete all deleted transactions"
+                      title="Permanently delete all deleted transactions"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                </div>
+              </th>
             </tr>
           </thead>
 
@@ -1087,8 +1414,8 @@ function Transactions() {
                           : "expense-amount"
                       }
                     >
-                        {transaction.type === "income" ? "+" : "-"}
-                        {formatCurrency(transaction.amount, currency)}
+                      {transaction.type === "income" ? "+" : "-"}
+                      {formatCurrency(transaction.amount, currency)}
                     </td>
                     <td>
                       <div className="table-actions">
@@ -1120,7 +1447,9 @@ function Transactions() {
             ) : filteredTransactions.length === 0 ? (
               <tr>
                 <td colSpan="5" className="empty-table">
-                  No transactions found. Add your first one!
+                  {filter === "csv"
+                    ? "No CSV-imported transactions found."
+                    : "No transactions found. Add your first one!"}
                 </td>
               </tr>
             ) : (
@@ -1138,8 +1467,8 @@ function Transactions() {
                         : "expense-amount"
                     }
                   >
-                        {transaction.type === "income" ? "+" : "-"}
-                        {formatCurrency(transaction.amount, currency)}
+                    {transaction.type === "income" ? "+" : "-"}
+                    {formatCurrency(transaction.amount, currency)}
                   </td>
                   <td>
                     <div className="table-actions">
@@ -1154,7 +1483,7 @@ function Transactions() {
                       <button
                         type="button"
                         className="delete-button"
-                        onClick={() => deleteTransaction(transaction._id)}
+                        onClick={() => setTransactionToDelete(transaction._id)}
                         aria-label="Delete"
                       >
                         <Trash2 size={15} />
@@ -1225,6 +1554,7 @@ function Transactions() {
             <form
               className="recurring-form"
               onSubmit={addRecurring}
+              key={editingRecurring?._id || "new-recurring"}
               noValidate
             >
               <select
@@ -1237,7 +1567,11 @@ function Transactions() {
                 <option value="expense">Expense</option>
               </select>
 
-              <select name="category" defaultValue="" aria-label="Category">
+              <select
+                name="category"
+                defaultValue={editingRecurring?.category?._id || editingRecurring?.category || ""}
+                aria-label="Category"
+              >
                 <option value="">Category</option>
                 {(recurringType === "income"
                   ? incomeCategories
@@ -1253,13 +1587,18 @@ function Transactions() {
                 key={`recurring-amount-${currency}`}
                 name="amount"
                 type="number"
+                defaultValue={
+                  editingRecurring
+                    ? fromPKR(editingRecurring.amount, currency)
+                    : ""
+                }
                 placeholder={`Amount (${currency})`}
                 aria-label="Amount"
               />
 
               <select
                 name="frequency"
-                defaultValue="monthly"
+                defaultValue={editingRecurring?.frequency || "monthly"}
                 aria-label="Frequency"
               >
                 <option value="weekly">Weekly</option>
@@ -1270,21 +1609,42 @@ function Transactions() {
               <input
                 name="startDate"
                 type="date"
-                defaultValue={getTodayString()}
+                defaultValue={
+                  editingRecurring?.startDate
+                    ? String(editingRecurring.startDate).slice(0, 10)
+                    : getTodayString()
+                }
                 aria-label="Start date"
               />
 
               <input
                 name="description"
                 type="text"
+                defaultValue={editingRecurring?.description || ""}
                 placeholder="Description (optional)"
                 aria-label="Description"
               />
 
               <button type="submit" className="primary-button">
-                <Plus size={15} />
-                Add Recurring
+                {editingRecurring ? <Pencil size={15} /> : <Plus size={15} />}
+                {savingRecurring
+                  ? "Saving…"
+                  : editingRecurring
+                    ? "Save Changes"
+                    : "Add Recurring"}
               </button>
+              {editingRecurring && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setEditingRecurring(null);
+                    setRecurringType("expense");
+                  }}
+                >
+                  Cancel Edit
+                </button>
+              )}
             </form>
 
             {recurringLoading ? (
@@ -1328,6 +1688,14 @@ function Transactions() {
                     <div className="recurring-actions">
                       <button
                         type="button"
+                        onClick={() => editRecurring(item)}
+                        aria-label="Edit recurring entry"
+                      >
+                        <Pencil size={15} />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => toggleRecurring(item._id)}
                       >
                         {item.isActive ? "Pause" : "Resume"}
@@ -1336,7 +1704,7 @@ function Transactions() {
                       <button
                         type="button"
                         className="delete-button"
-                        onClick={() => deleteRecurring(item._id)}
+                        onClick={() => setRecurringToDelete(item)}
                         aria-label="Delete recurring entry"
                       >
                         <Trash2 size={15} />
@@ -1350,7 +1718,82 @@ function Transactions() {
         )}
       </section>
 
-      {/* Add/Edit Transaction Modal */}
+      {recurringToDelete && (
+        <AdminConfirmModal
+          title="Delete recurring entry?"
+          message={`“${recurringToDelete.description || displayCategoryName(recurringToDelete.category?.name || "Recurring entry")}” will be removed. Already created transactions will remain.`}
+          confirmLabel="Delete entry"
+          loading={deletingRecurring}
+          onCancel={() => setRecurringToDelete(null)}
+          onConfirm={deleteRecurring}
+        />
+      )}
+
+      {csvDeleteConfirmOpen && (
+        <AdminConfirmModal
+          title="Delete all CSV transactions?"
+          message={`This will move all ${pagination?.total || 0} CSV-imported transactions to Deleted. You can restore them later.`}
+          confirmLabel="Delete all CSV transactions"
+          loading={deletingCsvTransactions}
+          onCancel={() => setCsvDeleteConfirmOpen(false)}
+          onConfirm={deleteAllCsvTransactions}
+        />
+      )}
+
+      {deletedDeleteConfirmOpen && (
+        <AdminConfirmModal
+          title="Permanently delete all deleted transactions?"
+          message={`This will permanently remove all ${deletedTransactions.length} transactions in Deleted from the database. This cannot be undone.`}
+          confirmLabel="Delete permanently"
+          loading={permanentlyDeletingTransactions}
+          onCancel={() => setDeletedDeleteConfirmOpen(false)}
+          onConfirm={permanentlyDeleteAllDeleted}
+        />
+      )}
+
+      {transactionToDelete && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !deletingTransaction) {
+              setTransactionToDelete(null);
+            }
+          }}
+        >
+          <section
+            className="transaction-modal delete-confirm-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-transaction-title"
+            aria-describedby="delete-transaction-description"
+          >
+            <div className="delete-confirm-icon"><Trash2 size={22} /></div>
+            <h2 id="delete-transaction-title">Delete transaction?</h2>
+            <p id="delete-transaction-description">
+              This transaction will be moved to Deleted, where you can restore it later.
+            </p>
+            <div className="delete-confirm-actions">
+              <button
+                type="button"
+                className="delete-cancel-button"
+                onClick={() => setTransactionToDelete(null)}
+                disabled={deletingTransaction}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="delete-confirm-button"
+                onClick={deleteTransaction}
+                disabled={deletingTransaction}
+              >
+                {deletingTransaction ? "Deleting…" : "Delete transaction"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
       {modalOpen && (
         <div className="modal-backdrop">
           <div className="transaction-modal">
@@ -1407,7 +1850,6 @@ function Transactions() {
                   type="number"
                   min="0.01"
                   step="any"
-                  placeholder="Enter amount"
                   defaultValue={editingTransaction ? fromPKR(editingTransaction.amount, currency) : ""}
                   placeholder={`Enter amount (${currency})`}
                 />
@@ -1507,8 +1949,6 @@ function Transactions() {
 
               <div className="modal-field">
                 <label>Date</label>
-                {/* NEW: max prevents future dates in the picker;
-                    validation in addTransaction enforces it. */}
                 <input
                   name="date"
                   type="date"
@@ -1535,25 +1975,32 @@ function Transactions() {
                 Recurring transaction
               </label>
 
-              <div className="modal-buttons">
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={closeTransactionModal}
-                >
-                  Cancel
-                </button>
+              <div className="transaction-form-actions">
+                {transactionFormError && (
+                  <div className="transaction-form-error" role="alert">
+                    {transactionFormError}
+                  </div>
+                )}
 
-                <button type="submit" className="primary-button">
-                  {editingTransaction ? "Save Changes" : "Add Transaction"}
-                </button>
+                <div className="modal-buttons">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={closeTransactionModal}
+                  >
+                    Cancel
+                  </button>
+
+                  <button type="submit" className="primary-button">
+                    {editingTransaction ? "Save Changes" : "Add Transaction"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* CSV Import Modal */}
       {csvModalOpen && (
         <div className="modal-backdrop">
           <div className="transaction-modal csv-modal">
@@ -1594,13 +2041,6 @@ function Transactions() {
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={downloadSampleCSV}
-              className="csv-sample-btn"
-            >
-              Download Sample CSV
-            </button>
 
             {csvPreviewLoading && (
               <div className="csv-preview-loading">
@@ -1642,7 +2082,14 @@ function Transactions() {
                           <td>{row.date}</td>
                           <td>{row.description || "—"}</td>
                           <td>{row.amount}</td>
-                          <td>{row.type}</td>
+                          <td>
+                            {row.type}
+                            {row.typeCorrectedFrom && (
+                              <small className="csv-ai-badge">
+                                Corrected from CSV {row.typeCorrectedFrom} to match category
+                              </small>
+                            )}
+                          </td>
                           <td>
                             <select
                               value={row.selectedCategory}
@@ -1693,6 +2140,20 @@ function Transactions() {
                     {csvResult.batch.failedRows}
                   </div>
                 )}
+
+                {csvResult.errors?.length > 0 && (
+                  <div className="csv-failed-rows">
+                    <strong>Why these rows failed</strong>
+                    <ul>
+                      {csvResult.errors.map((item, index) => (
+                        <li key={`${item.row || "row"}-${index}`}>
+                          <strong>Row {item.row || index + 1}:</strong>{" "}
+                          {item.message || "Could not import this row."}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1733,7 +2194,111 @@ function Transactions() {
         </div>
       )}
 
-      {/* Budget Exceeded Warning Modal */}
+      {receiptModalOpen && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !receiptSaving && !receiptReading) {
+              closeReceiptModal();
+            }
+          }}
+        >
+          <section className="transaction-modal receipt-modal" role="dialog" aria-modal="true" aria-labelledby="receipt-modal-title">
+            <div className="modal-heading">
+              <div>
+                <h2 id="receipt-modal-title">Scan a receipt</h2>
+                <p>We’ll read the bill and prepare an expense for you to review.</p>
+              </div>
+              <button type="button" onClick={closeReceiptModal} aria-label="Close" disabled={receiptSaving || receiptReading}>
+                <X size={19} />
+              </button>
+            </div>
+
+            <label className="receipt-image-picker">
+              <Camera size={18} />
+              {receiptFile ? "Choose another image" : "Select image or take a photo"}
+              <input type="file" accept="image/*" capture="environment" onChange={handleReceiptFile} />
+            </label>
+
+            {receiptPreview && (
+              <div className="receipt-preview-wrap">
+                <img src={receiptPreview} alt="Selected receipt preview" />
+              </div>
+            )}
+
+            {receiptReading && (
+              <div className="receipt-reading-status" aria-live="polite">
+                <Loader2 size={16} className="spin" />
+                <span>Reading receipt… {receiptProgress}%</span>
+                <div className="receipt-progress-track"><i style={{ width: `${receiptProgress}%` }} /></div>
+              </div>
+            )}
+
+            <form onSubmit={saveReceiptTransaction}>
+              <div className="receipt-fields-grid">
+                <div className="modal-field">
+                  <label>Total amount ({currency})</label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="any"
+                    value={receiptDraft.amount}
+                    onChange={(event) => setReceiptDraft((current) => ({ ...current, amount: event.target.value }))}
+                    placeholder="Enter bill total"
+                    required
+                  />
+                </div>
+                <div className="modal-field">
+                  <label>Date</label>
+                  <input
+                    type="date"
+                    max={getTodayString()}
+                    value={receiptDraft.date}
+                    onChange={(event) => setReceiptDraft((current) => ({ ...current, date: event.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="modal-field">
+                <label>Description</label>
+                <input
+                  type="text"
+                  value={receiptDraft.description}
+                  onChange={(event) => setReceiptDraft((current) => ({ ...current, description: event.target.value }))}
+                  placeholder="e.g., Biryani Wala - Biryani"
+                  maxLength={120}
+                />
+              </div>
+
+              <div className="modal-field">
+                <label>Expense category / budget</label>
+                <select
+                  value={receiptDraft.category}
+                  onChange={(event) => setReceiptDraft((current) => ({ ...current, category: event.target.value }))}
+                  required
+                >
+                  <option value="">Choose a category with a monthly budget</option>
+                  {expenseCategories.map((category) => (
+                    <option key={category._id} value={category._id}>
+                      {displayCategoryName(category.name)}
+                    </option>
+                  ))}
+                </select>
+                <small>The matching category’s active monthly budget is checked before saving.</small>
+              </div>
+
+              <div className="modal-buttons">
+                <button type="button" className="secondary-button" onClick={closeReceiptModal} disabled={receiptSaving || receiptReading}>Cancel</button>
+                <button type="submit" className="primary-button" disabled={receiptSaving || receiptReading || !receiptFile}>
+                  {receiptSaving ? <><Loader2 size={15} className="spin" /> Saving…</> : "Add Expense"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
       {budgetWarning && (
         <div
           className="modal-backdrop budget-warning-backdrop"
@@ -1807,7 +2372,7 @@ function Transactions() {
                   </div>
 
                   <p className="budget-warning-hint" style={{ color: "#dc2626" }}>
-                    Please reduce the expense amount or add income to your savings before proceeding.
+                    Please reduce the expense amount or add funds to your savings before proceeding.
                   </p>
 
                   <div className="budget-warning-actions" style={{ marginTop: "16px" }}>
@@ -1911,65 +2476,6 @@ function Transactions() {
                   </div>
                 </>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* No budget set for this category */}
-      {missingBudgetWarning && (
-        <div
-          className="modal-backdrop budget-warning-backdrop"
-          onClick={() => setMissingBudgetWarning(null)}
-        >
-          <div
-            className="transaction-modal budget-warning-modal"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="missing-budget-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="budget-warning-icon">
-              <AlertTriangle size={30} />
-            </div>
-
-            <div className="budget-warning-content">
-              <h2 id="missing-budget-title">
-                No budget set for this category
-              </h2>
-
-              <p>
-                You haven’t set a monthly budget for{" "}
-                <strong>{missingBudgetWarning.category}</strong>. Set a
-                budget for this category before adding an expense.
-              </p>
-
-              <p className="budget-warning-hint">
-                Every expense category must match a budget category so your
-                spending stays tracked.
-              </p>
-            </div>
-
-            <div className="budget-warning-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setMissingBudgetWarning(null)}
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                className="primary-button"
-                onClick={() => {
-                  setMissingBudgetWarning(null);
-                  closeTransactionModal();
-                  navigate("/budgets");
-                }}
-              >
-                Set Budget
-              </button>
             </div>
           </div>
         </div>

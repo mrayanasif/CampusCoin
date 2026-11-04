@@ -1,6 +1,8 @@
 
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
+const { syncMonthlySavings } = require("./transaction.controller");
+const { currentMonth, monthRange } = require("../utils/validation");
 
 const invalid = (res, message) =>
   res.status(400).json({
@@ -8,12 +10,11 @@ const invalid = (res, message) =>
     message,
   });
 
-// Get the authenticated user's profile
 exports.getProfile = async (req, res, next) => {
   try {
     const userId = req.user?.id || req.user?._id;
 
-    const user = await User.findById(userId).select("-password");
+    let user = await User.findById(userId).select("-password");
 
     if (!user) {
       return res.status(404).json({
@@ -22,16 +23,41 @@ exports.getProfile = async (req, res, next) => {
       });
     }
 
+    await syncMonthlySavings(user._id, new Date());
+    const { start, end } = monthRange(currentMonth());
+    const [totals, refreshedUser] = await Promise.all([
+      Transaction.aggregate([
+        {
+          $match: {
+            user: user._id,
+            deletedAt: null,
+            date: { $gte: start, $lt: end },
+          },
+        },
+        { $group: { _id: "$type", total: { $sum: "$amount" } } },
+      ]),
+      User.findById(user._id).select("-password"),
+    ]);
+    if (!refreshedUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    user = refreshedUser;
+
+    const rawIncome = totals.find((item) => item._id === "income")?.total || 0;
+    const expense = totals.find((item) => item._id === "expense")?.total || 0;
+    const income = rawIncome > 0 ? rawIncome : Number(user.monthlyAllowance) || 0;
+    const availableBalance = Math.max(0, income - expense);
+
     return res.json({
       success: true,
       user,
+      availableBalance,
     });
   } catch (error) {
     next(error);
   }
 };
 
-// Update profile and synchronize this month's allowance
 exports.updateProfile = async (req, res, next) => {
   try {
     const userId = req.user?.id || req.user?._id;
@@ -41,6 +67,7 @@ exports.updateProfile = async (req, res, next) => {
       academicYear,
       monthlyAllowance,
       savingsGoal,
+      savings,
     } = req.body || {};
 
     const update = {};
@@ -54,7 +81,6 @@ exports.updateProfile = async (req, res, next) => {
       update.name = name.trim();
     }
 
-    // Validate academic year
     if (academicYear !== undefined) {
       if (
         typeof academicYear !== "string" ||
@@ -69,10 +95,10 @@ exports.updateProfile = async (req, res, next) => {
       update.academicYear = academicYear.trim();
     }
 
-    // Validate numeric profile fields
     for (const [key, value] of Object.entries({
       monthlyAllowance,
       savingsGoal,
+      savings,
     })) {
       if (value === undefined) continue;
 
@@ -91,12 +117,13 @@ exports.updateProfile = async (req, res, next) => {
       update[key] = Number(value);
     }
 
+    if (savings !== undefined) update.savingsConfigured = true;
+
     if (Object.keys(update).length === 0) {
       return invalid(res, "No valid profile fields supplied");
     }
 
-    // Save profile changes in MongoDB
-    const user = await User.findByIdAndUpdate(
+    let user = await User.findByIdAndUpdate(
       userId,
       { $set: update },
       {
@@ -112,8 +139,6 @@ exports.updateProfile = async (req, res, next) => {
       });
     }
 
-    // If monthly allowance changed, synchronize this month's
-    // existing allowance transaction with the new profile value.
     if (update.monthlyAllowance !== undefined) {
       const now = new Date();
 
@@ -141,11 +166,12 @@ exports.updateProfile = async (req, res, next) => {
       }).sort({ date: -1 });
 
       if (allowanceTransaction) {
-        // Update the existing transaction instead of creating
-        // a duplicate allowance entry.
         allowanceTransaction.amount = user.monthlyAllowance;
         await allowanceTransaction.save();
       }
+
+      await syncMonthlySavings(user._id, new Date());
+      user = await User.findById(user._id).select("-password");
     }
 
     return res.json({
@@ -158,7 +184,7 @@ exports.updateProfile = async (req, res, next) => {
   }
 };
 
-// Update user preferences
+
 exports.updatePreferences = async (req, res, next) => {
   try {
     const userId = req.user?.id || req.user?._id;
@@ -215,7 +241,6 @@ exports.updatePreferences = async (req, res, next) => {
   }
 };
 
-// Update profile image
 exports.updateProfileImage = async (req, res, next) => {
   try {
     const userId = req.user?.id || req.user?._id;
@@ -248,7 +273,7 @@ exports.updateProfileImage = async (req, res, next) => {
   }
 };
 
-// Deactivate account
+
 exports.deactivateAccount = async (req, res, next) => {
   try {
     const userId = req.user?.id || req.user?._id;

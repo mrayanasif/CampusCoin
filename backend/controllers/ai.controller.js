@@ -50,7 +50,7 @@ exports.categorize = async (req, res, next) => {
       console.warn("Groq categorization suggestion failed:", e.message);
     }
 
-    // Persist the suggestion so /ai/categorize/feedback can update it
+
     if (result && result.category) {
       await AIClassification.findOneAndUpdate(
         { user: req.user.id, description: trimmed },

@@ -19,6 +19,7 @@ import {
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
+import AdminConfirmModal from "../../components/AdminConfirmModal/AdminConfirmModal";
 import {
   formatCurrency,
   fromPKR,
@@ -51,6 +52,8 @@ function Budgets() {
   const [categories, setCategories] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
+  const [budgetToDelete, setBudgetToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,15 +65,15 @@ function Budgets() {
     fetchCategories();
   }, []);
 
-  const fetchBudgets = async () => {
+  const fetchBudgets = async ({ showLoader = budgets.length === 0 } = {}) => {
     try {
-      setLoading(true);
+      if (showLoader) setLoading(true);
       const res = await API.get("/budgets/status");
       setBudgets(res.data.status || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load budgets");
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
@@ -135,24 +138,28 @@ function Budgets() {
     }
   };
 
-  const deleteBudget = async (id) => {
-    if (!window.confirm("Delete this budget?")) return;
+  const deleteBudget = async () => {
+    if (!budgetToDelete || deleting) return;
     try {
-      await API.delete(`/budgets/${id}`);
+      setDeleting(true);
+      await API.delete(`/budgets/${budgetToDelete.id}`);
       toast.success("Budget deleted");
-      if (editingBudget && editingBudget.id === id) {
+      if (editingBudget && editingBudget.id === budgetToDelete.id) {
         setEditingBudget(null);
         setShowForm(false);
       }
+      setBudgetToDelete(null);
       fetchBudgets();
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   };
 
   const overBudget = budgets.find((b) => b.status === "exceeded");
 
-  // Prepare chart data for budget utilization
+
   const budgetUsageData = budgets.map((item, index) => {
     const catName = displayCategoryName(item.budget?.category?.name || "Category");
     return {
@@ -168,10 +175,16 @@ function Budgets() {
   const totalUsed = budgetUsageData.reduce((sum, b) => sum + b.used, 0);
   const totalLimit = budgetUsageData.reduce((sum, b) => sum + b.limit, 0);
 
-  // Filter for pie slices with actual spending
+  const unavailableCategoryIds = new Set(
+    budgets
+      .filter((item) => !editingBudget || String(item.budget?._id) !== String(editingBudget.id))
+      .map((item) => String(item.budget?.category?._id || item.budget?.category))
+  );
+
+
   const pieSlices = budgetUsageData.filter((b) => b.used > 0);
 
-  // Identify mostly used budget (highest used amount)
+
   const mostUsedBudget =
     [...budgetUsageData].sort((a, b) => b.used - a.used)[0] || null;
 
@@ -244,19 +257,29 @@ function Budgets() {
           </div>
 
           <div className="budget-form-fields">
-            <select
-              name="category"
-              defaultValue={editingBudget ? editingBudget.category : ""}
-              key={editingBudget ? `cat-${editingBudget.category}` : "cat-new"}
-              required
-            >
-              <option value="">Choose category</option>
-              {categories.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+            <div className="budget-category-field">
+              <select
+                name="category"
+                defaultValue={editingBudget ? editingBudget.category : ""}
+                key={editingBudget ? `cat-${editingBudget.category}` : "cat-new"}
+                required
+              >
+                <option value="">Choose category</option>
+                {categories.map((c) => (
+                  <option
+                    key={c._id}
+                    value={c._id}
+                    disabled={unavailableCategoryIds.has(String(c._id))}
+                  >
+                    {displayCategoryName(c.name)}
+                    {unavailableCategoryIds.has(String(c._id)) ? " — Already added" : ""}
+                  </option>
+                ))}
+              </select>
+              <small className="budget-form-hint">
+                Categories with an existing monthly budget are disabled.
+              </small>
+            </div>
 
             <input
               name="limit"
@@ -268,25 +291,27 @@ function Budgets() {
               required
             />
 
-            <button type="submit" className="budget-save-btn">
-              {editingBudget ? "Update Budget" : "Save Budget"}
-            </button>
+            <div className="budget-form-actions">
+              <button type="submit" className="budget-save-btn">
+                {editingBudget ? "Update Budget" : "Save Budget"}
+              </button>
 
-            <button
-              type="button"
-              className="budget-cancel-btn"
-              onClick={() => {
-                setShowForm(false);
-                setEditingBudget(null);
-              }}
-            >
-              Cancel
-            </button>
+              <button
+                type="button"
+                className="budget-cancel-btn"
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingBudget(null);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </form>
       )}
 
-      {/* Pie Chart: Budget Utilization / Mostly Used Budget */}
+
       {!loading && budgets.length > 0 && (
         <section className="budget-chart-card">
           <div className="budget-chart-header">
@@ -470,7 +495,10 @@ function Budgets() {
                   <button
                     type="button"
                     className="budget-delete-btn"
-                    onClick={() => deleteBudget(b._id)}
+                    onClick={() => setBudgetToDelete({
+                      id: b._id,
+                      category: displayCategoryName(b.category?.name || "this category"),
+                    })}
                     aria-label="Delete budget"
                     title="Delete budget"
                   >
@@ -490,6 +518,17 @@ function Budgets() {
             {displayCategoryName(overBudget.budget?.category?.name || "Category")} has exceeded its monthly budget.
           </span>
         </div>
+      )}
+
+      {budgetToDelete && (
+        <AdminConfirmModal
+          title="Delete this budget?"
+          message={`The ${budgetToDelete.category} budget will be permanently removed.`}
+          confirmLabel="Delete budget"
+          loading={deleting}
+          onCancel={() => setBudgetToDelete(null)}
+          onConfirm={deleteBudget}
+        />
       )}
     </div>
   );

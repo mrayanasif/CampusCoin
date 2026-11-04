@@ -46,7 +46,7 @@ function DashboardLayout() {
     return () => window.removeEventListener("campuscoin:user-updated", refreshStoredUser);
   }, []);
 
-  // Re-apply saved accessibility preferences whenever the student panel loads.
+
   useEffect(() => {
     applyStudentPreferences();
   }, []);

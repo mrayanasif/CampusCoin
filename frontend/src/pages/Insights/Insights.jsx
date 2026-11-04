@@ -16,6 +16,8 @@ import toast from "react-hot-toast";
 import jsPDF from "jspdf";
 
 import API from "../../api/axios";
+import AdminConfirmModal from "../../components/AdminConfirmModal/AdminConfirmModal";
+import { formatCurrency, toPKR, useCurrency } from "../../context/CurrencyContext";
 import {
   Skeleton,
   SkeletonText,
@@ -24,11 +26,30 @@ import "./Insights.css";
 
 function Insights() {
   const navigate = useNavigate();
+  const { currency } = useCurrency();
   const [insights, setInsights] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [insightToDelete, setInsightToDelete] = useState(null);
+  const [deletingInsight, setDeletingInsight] = useState(false);
   const [filter, setFilter] = useState("all");
+
+  const formatInsightText = (text, sourceCurrency = "PKR") => {
+    const source = sourceCurrency === "USD" ? "USD" : "PKR";
+    return String(text || "")
+      .replace(/\b(\d+(?:\.\d+)?)\s*%/g, (match, percentage) =>
+        `${Math.min(Number(percentage), 100)}%`
+      )
+      .replace(
+      /(?:₨|Rs\.?|PKR|USD|\$)\s*([\d,]+(?:\.\d+)?)/gi,
+      (match, amount) =>
+        formatCurrency(toPKR(Number(amount.replace(/,/g, "")), source), currency)
+      );
+  };
+
+  const insightAmount = (amount, sourceCurrency = "PKR") =>
+    formatCurrency(toPKR(amount, sourceCurrency === "USD" ? "USD" : "PKR"), currency);
 
   useEffect(() => {
     if (!localStorage.getItem("token")) {
@@ -83,6 +104,8 @@ function Insights() {
         const filtered = curr.filter((i) => i.month !== newInsight.month);
         return [newInsight, ...filtered];
       });
+      window.dispatchEvent(new Event("campuscoin:insight-generated"));
+      localStorage.setItem("campuscoin:insight_generated", `${newInsight.month}:${Date.now()}`);
     } catch (error) {
       toast.error(
         error.response?.data?.message ||
@@ -141,9 +164,9 @@ function Insights() {
         y += 5;
       };
 
-      const title = insight.summaryText?.split(".")[0] || "Monthly Summary";
+      const title = formatInsightText(insight.summaryText, insight.currency)?.split(".")[0] || "Monthly Summary";
       addSection("Overview", title);
-      addSection("Spending Summary", insight.summaryText);
+      addSection("Spending Summary", formatInsightText(insight.summaryText, insight.currency));
 
       if (insight.flaggedCategories?.length) {
         ensureSpace(15);
@@ -156,7 +179,7 @@ function Insights() {
         pdf.setFont("helvetica", "normal");
         pdf.setFontSize(10.5);
         insight.flaggedCategories.forEach((item) => {
-          const lines = pdf.splitTextToSize(`- ${item.message}`, pageWidth - margin * 2);
+          const lines = pdf.splitTextToSize(`- ${formatInsightText(item.message, insight.currency)}`, pageWidth - margin * 2);
           lines.forEach((line) => {
             ensureSpace(lineHeight);
             pdf.text(line, margin, y);
@@ -167,7 +190,7 @@ function Insights() {
         y += 3;
       }
 
-      addSection("Suggested Action", insight.tipText);
+      addSection("Suggested Action", formatInsightText(insight.tipText, insight.currency));
 
       const pageCount = pdf.internal.getNumberOfPages();
       for (let page = 1; page <= pageCount; page += 1) {
@@ -189,13 +212,16 @@ function Insights() {
   };
 
   const deleteInsight = async (id) => {
-    if (!window.confirm("Delete this insight?")) return;
     try {
+      setDeletingInsight(true);
       await API.delete(`/insights/${id}`);
       setInsights((curr) => curr.filter((i) => i._id !== id));
+      setInsightToDelete(null);
       toast.success("Deleted");
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
+    } finally {
+      setDeletingInsight(false);
     }
   };
 
@@ -350,7 +376,7 @@ function Insights() {
 
                 <div className="insight-heading">
                   <h2>
-                    {insight.summaryText?.split(".")[0] || "Monthly Summary"}
+                    {formatInsightText(insight.summaryText, insight.currency)?.split(".")[0] || "Monthly Summary"}
                   </h2>
 
                   <div className="insight-actions">
@@ -381,7 +407,7 @@ function Insights() {
                     <button
                       type="button"
                       className="insight-delete-btn"
-                      onClick={() => deleteInsight(insight._id)}
+                      onClick={() => setInsightToDelete(insight)}
                       aria-label="Delete insight"
                       title="Delete"
                     >
@@ -390,13 +416,13 @@ function Insights() {
                   </div>
                 </div>
 
-                <p>{insight.summaryText}</p>
+                <p>{formatInsightText(insight.summaryText, insight.currency)}</p>
 
                 {insight.flaggedCategories?.length > 0 && (
                   <div className="insight-flagged">
                     {insight.flaggedCategories.map((f, i) => (
                       <div key={i} className="insight-flagged-item">
-                        ⚠️ {f.message}
+                        ⚠️ {formatInsightText(f.message, insight.currency)}
                       </div>
                     ))}
                   </div>
@@ -407,7 +433,7 @@ function Insights() {
                     <Leaf size={17} style={{ color: "#16a34a", flexShrink: 0 }} />
                     <div>
                       <strong>AI Recommendation</strong>
-                      <span>{insight.tipText}</span>
+                      <span>{formatInsightText(insight.tipText, insight.currency)}</span>
                     </div>
                   </div>
                 )}
@@ -435,9 +461,9 @@ function Insights() {
                         >
                           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                             <span style={{ fontWeight: "700", color: "#16a34a" }}>{idx + 1}.</span>
-                            <span style={{ color: "#1e293b", fontWeight: "500" }}>{tip.title}</span>
+                            <span style={{ color: "#1e293b", fontWeight: "500" }}>{formatInsightText(tip.title, insight.currency)}</span>
                             <span style={{ color: "#15803d", fontWeight: "700", background: "#dcfce7", padding: "2px 8px", borderRadius: "12px", fontSize: "11px" }}>
-                              Save ${tip.potentialSavings}/month
+                              Save {insightAmount(tip.potentialSavings, insight.currency)}/month
                             </span>
                           </div>
                           <button
@@ -466,6 +492,16 @@ function Insights() {
             ))
           )}
         </div>
+      )}
+      {insightToDelete && (
+        <AdminConfirmModal
+          title="Delete this insight?"
+          message={`The insight for ${insightToDelete.month || "this month"} will be permanently deleted.`}
+          confirmLabel="Delete insight"
+          loading={deletingInsight}
+          onCancel={() => setInsightToDelete(null)}
+          onConfirm={() => deleteInsight(insightToDelete._id)}
+        />
       )}
     </div>
   );

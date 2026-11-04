@@ -3,6 +3,7 @@ import { Megaphone, Pencil, Plus, Power, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../../api/axios";
+import AdminConfirmModal from "../../../components/AdminConfirmModal/AdminConfirmModal";
 import "./Announcements.css";
 
 const ANNOUNCEMENT_TYPES = [
@@ -22,6 +23,8 @@ function Announcements() {
     message: "",
     type: "general",
   });
+  const [announcementToDelete, setAnnouncementToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -121,15 +124,19 @@ function Announcements() {
     }
   };
 
-  const removeAnnouncement = async (id) => {
-    if (!window.confirm("Delete this announcement?")) return;
+  const removeAnnouncement = async () => {
+    if (!announcementToDelete || deleting) return;
     try {
-      await API.delete(`/admin/announcements/${id}`);
+      setDeleting(true);
+      await API.delete(`/admin/announcements/${announcementToDelete._id}`);
       toast.success("Deleted");
-      setAnnouncements((curr) => curr.filter((a) => a._id !== id));
-      if (editingId === id) cancelEdit();
+      setAnnouncements((curr) => curr.filter((a) => a._id !== announcementToDelete._id));
+      if (editingId === announcementToDelete._id) cancelEdit();
+      setAnnouncementToDelete(null);
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -282,7 +289,7 @@ function Announcements() {
                     <button
                       type="button"
                       className="ann-btn-delete"
-                      onClick={() => removeAnnouncement(ann._id)}
+                      onClick={() => setAnnouncementToDelete(ann)}
                       title="Delete"
                     >
                       <Trash2 size={15} />
@@ -304,6 +311,17 @@ function Announcements() {
             )
           )}
         </div>
+      )}
+
+      {announcementToDelete && (
+        <AdminConfirmModal
+          title="Delete announcement?"
+          message={`Are you sure you want to delete “${announcementToDelete.title}”? This action cannot be undone.`}
+          confirmLabel="Delete announcement"
+          loading={deleting}
+          onCancel={() => setAnnouncementToDelete(null)}
+          onConfirm={removeAnnouncement}
+        />
       )}
     </div>
   );

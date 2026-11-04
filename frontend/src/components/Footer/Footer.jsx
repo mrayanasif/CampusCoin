@@ -7,9 +7,7 @@ export const Footer = () => {
   return (
     <footer className="footer-wrapper">
       <div className="container">
-        {/* Main 4-Column Grid */}
         <div className="footer-grid">
-          {/* Col 1: Brand Info & Socials */}
           <div className="footer-col brand-col">
             <div className="footer-logo-wrap">
               <Logo size="large" showSubtitle />
@@ -33,7 +31,7 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Col 2: Navigation Links */}
+
           <div className="footer-col">
             <h4 className="footer-col-title">Platform</h4>
             <ul className="footer-links-list">
@@ -45,7 +43,7 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Col 3: Campus Network */}
+
           <div className="footer-col">
             <h4 className="footer-col-title">Campus Network</h4>
             <ul className="footer-contact-list">
@@ -64,7 +62,7 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Col 4: Quick Launch CTAs */}
+
           <div className="footer-col">
             <h4 className="footer-col-title">Launch Cockpit</h4>
             <div className="footer-cta-stack">
@@ -80,7 +78,7 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom Sub-Footer Bar */}
+
         <div className="footer-bottom-bar">
           <div className="footer-legal-links">
             <a href="#">Privacy Policy</a>

@@ -4,12 +4,9 @@ const AIClassification = require("../models/AIClassification");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-/**
- * Gemini AI se category suggest karwana
- */
+
 async function suggestCategoryForDescription(userId, description) {
   try {
-    // 1. Database se saari categories nikal lo (taake AI ko pata ho kya options hain)
     const categories = await Category.find({
       $or: [{ isDefault: true }, { createdBy: userId }],
       isActive: true,
@@ -17,7 +14,7 @@ async function suggestCategoryForDescription(userId, description) {
 
     const categoryNames = categories.map((c) => c.name).join(", ");
 
-    // 2. AI ko prompt bhejo
+
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const prompt = `
@@ -30,26 +27,23 @@ async function suggestCategoryForDescription(userId, description) {
     const result = await model.generateContent(prompt);
     const responseText = result.response.text().trim();
 
-    // 3. AI ke jawab ko database ki category se match karo
+
     const matchedCategory = categories.find(
       (c) => c.name.toLowerCase() === responseText.toLowerCase()
     ) || categories.find((c) => c.name === "Miscellaneous");
 
     return {
       category: matchedCategory || null,
-      confidence: 0.95, // Gemini usually accurate hota hai
+      confidence: 0.95, 
     };
 
   } catch (error) {
     console.error("Gemini AI Error:", error.message);
-    // Fallback: Agar API fail ho jaye, to purana Keyword logic chalao (taake app crash na ho)
+
     return fallbackKeywordSuggestion(userId, description);
   }
 }
 
-/**
- * Helper function jo controller ke response format ke liye zaroori hai
- */
 function shapeSuggestion(result) {
   return {
     suggestedCategory: result.category
@@ -59,9 +53,6 @@ function shapeSuggestion(result) {
   };
 }
 
-/**
- * User ke feedback ko save karna
- */
 async function saveCategorizationFeedback(userId, data) {
   const { description, userSelectedCategory, suggestedCategory, transactionId } = data;
   return await AIClassification.findOneAndUpdate(
@@ -78,9 +69,6 @@ async function saveCategorizationFeedback(userId, data) {
   );
 }
 
-/**
- * Fallback Logic (Agar API quota khatam ho jaye ya internet na ho)
- */
 async function fallbackKeywordSuggestion(userId, description) {
   const categories = await Category.find({ isActive: true });
   const lowerDesc = description.toLowerCase();

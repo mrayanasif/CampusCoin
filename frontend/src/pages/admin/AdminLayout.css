@@ -1,6 +1,6 @@
 .admin-layout {
   min-height: 100vh;
-  background-color: #faf8f5;
+  background-color: #f8f8f5;
 }
 
 .admin-sidebar {
@@ -9,7 +9,7 @@
   left: 0;
   z-index: 1100;
   display: flex;
-  width: 240px;
+  width: 252px;
   height: 100vh;
   flex-direction: column;
   color: #e5e5e5;
@@ -19,7 +19,7 @@
 
 .admin-sidebar-header {
   display: flex;
-  height: 76px;
+  height: 80px;
   padding: 0 20px;
   align-items: center;
   justify-content: space-between;
@@ -87,8 +87,8 @@
   gap: 8px;
   margin: 16px 16px 8px;
   padding: 8px 12px;
-  background: rgba(212, 175, 55, 0.1);
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  background: rgba(199, 243, 107, 0.1);
+  border: 1px solid rgba(199, 243, 107, 0.25);
   border-radius: 8px;
   color: #587D20;
   font-size: 11px;
@@ -135,7 +135,7 @@
 
 .admin-sidebar nav a:hover {
   color: #C7F36B;
-  background-color: rgba(212, 175, 55, 0.06);
+  background-color: rgba(199, 243, 107, 0.08);
 }
 
 .admin-sidebar nav a.active {
@@ -154,6 +154,56 @@
   gap: 9px;
   padding: 16px 12px 20px;
   border-top: 1px solid #1f1f1f;
+}
+
+.admin-dark-mode-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  align-items: center;
+  justify-content: space-between;
+  color: #e5e5e5;
+  background: #1b1b1b;
+  border: 1px solid #343434;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-dark-mode-toggle > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dark-mode-toggle > i {
+  display: flex;
+  width: 38px;
+  height: 22px;
+  padding: 3px;
+  align-items: center;
+  background: #555;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.admin-dark-mode-toggle > i b {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.admin-dark-mode-toggle > i.is-on {
+  background: #8dbb42;
+}
+
+.admin-dark-mode-toggle > i.is-on b {
+  transform: translateX(16px);
 }
 
 .admin-website {
@@ -220,8 +270,148 @@
 
 .admin-content {
   min-height: 100vh;
-  margin-left: 240px;
-  padding: 32px;
+  margin-left: 252px;
+  padding: 28px 34px 36px;
+}
+
+body.dark-mode .admin-layout {
+  color: #f3f4f6;
+  background: #101113;
+}
+
+body.dark-mode .admin-mobile-header {
+  background: #17171a;
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .admin-menu-button,
+body.dark-mode .admin-mobile-brand-text {
+  color: #f3f4f6;
+}
+
+/* Shared dark surfaces for admin pages with page-specific light styles. */
+body.dark-mode .admin-content {
+  color: #e5e7eb;
+}
+
+body.dark-mode .admin-content :is(
+  .settings-form,
+  .admin-appearance-card,
+  .settings-empty,
+  .settings-item,
+  .users-table,
+  .user-search,
+  .admin-category-form,
+  .admin-category-list,
+  .template-form,
+  .template-list article,
+  .ann-form,
+  .ann-empty,
+  .ann-item,
+  .statistics-summary > div,
+  .statistics-chart
+) {
+  color: #e5e7eb;
+  background-color: #171a19;
+  border-color: #303734;
+}
+
+body.dark-mode .admin-content :is(
+  .settings-item h3,
+  .settings-item strong,
+  .settings-item label,
+  .settings-edit-btn,
+  .user-row strong,
+  .user-row span,
+  .admin-category-list > div,
+  .admin-category-list span,
+  .template-list h3,
+  .ann-item-title h3,
+  .ann-item p,
+  .statistics-summary strong,
+  .statistics-chart-heading h2
+) {
+  color: #e5e7eb;
+}
+
+body.dark-mode .admin-content :is(
+  .settings-form input,
+  .settings-item-content input,
+  .settings-value,
+  .admin-category-form input,
+  .admin-category-form select,
+  .admin-category-list input,
+  .admin-category-list select,
+  .template-form input,
+  .template-form select,
+  .template-form textarea,
+  .ann-form input,
+  .ann-form select,
+  .ann-form textarea,
+  .ann-edit-form input,
+  .ann-edit-form select,
+  .ann-edit-form textarea,
+  .user-search input
+) {
+  color: #f3f4f6;
+  background-color: #101312;
+  border-color: #38413d;
+}
+
+body.dark-mode .admin-content :is(
+  .settings-form input,
+  .admin-category-form input,
+  .template-form input,
+  .ann-form input,
+  .ann-form textarea
+)::placeholder {
+  color: #929b96;
+}
+
+body.dark-mode .admin-content :is(
+  .settings-form button[type="submit"],
+  .admin-category-form button,
+  .template-form button[type="submit"],
+  .ann-form button[type="submit"],
+  .settings-edit-btn,
+  .settings-save-btn,
+  .ann-btn-toggle
+):hover:not(:disabled) {
+  color: #10130c;
+  background-color: #b7e95a;
+  border-color: #b7e95a;
+}
+
+body.dark-mode .admin-content .user-row button:hover:not(:last-child) {
+  color: #10130c;
+  background-color: #b7e95a;
+  border-color: #b7e95a;
+}
+
+body.dark-mode .admin-content :is(.admin-category-list button:not(:last-child), .template-list button:not(:last-child)):hover:not(:disabled) {
+  color: #10130c;
+  background-color: #b7e95a;
+  border-color: #b7e95a;
+}
+
+body.dark-mode .admin-content .user-row button:last-child:hover:not(:disabled) {
+  color: #10130c;
+  background-color: #b7e95a;
+  border-color: #b7e95a;
+}
+
+body.dark-mode .admin-content .users-head {
+  color: #b8c0bb;
+  background-color: #202522;
+  border-color: #303734;
+}
+
+body.dark-mode .admin-content :is(.user-row, .admin-category-list > div, .ann-item-meta) {
+  border-color: #303734;
+}
+
+body.dark-mode .admin-content :is(.ann-empty, .settings-empty, .template-empty, .statistics-empty) {
+  color: #aab2ad;
 }
 
 .admin-mobile-header {

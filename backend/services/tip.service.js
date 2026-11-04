@@ -6,8 +6,7 @@ const { clamp, currentMonth } = require("../utils/validation");
 
 const formatNumber = (value) => Number(value || 0).toLocaleString();
 
-// SRS: tips must be ranked by potential savings impact. Priority is therefore
-// anchored on the estimated saving while keeping a sensible floor per type.
+
 function impactPriority(basePriority, potentialSavings) {
   const impact = clamp(Math.round((potentialSavings || 0) / 60), 0, 90);
   return Math.max(basePriority || 0, impact);
@@ -41,10 +40,13 @@ async function generateTipsForUser(userId) {
     SavingTip.find({ user: userId, isDismissed: true }).select("title"),
   ]);
 
-  // Pinned tips are user-curated: keep them, only refresh the auto-generated
-  // (unpinned) ones. Dismissed titles are remembered so a regeneration does not
-  // resurrect a tip the student explicitly dismissed.
-  await SavingTip.deleteMany({ user: userId, isDismissed: false, isPinned: false });
+
+  await SavingTip.deleteMany({
+    user: userId,
+    isDismissed: false,
+    isPinned: false,
+    source: { $ne: "insight" },
+  });
 
   const dismissedTitles = new Set(
     dismissedTips.map((tip) => String(tip.title || "").toLowerCase())
@@ -187,9 +189,7 @@ async function generateTipsForUser(userId) {
       });
     }
 
-    // SRS 1.6: compare the student's current-month spending against their own
-    // historical average. Baseline = prior 3 FULL calendar months (current month
-    // excluded). A tip is raised when current spend is >= 125% of that average.
+
     const now = new Date();
     const currentMonthStart = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
@@ -251,7 +251,7 @@ async function generateTipsForUser(userId) {
         (historyByCategory.get(String(row.categoryId)) || 0) /
         HISTORICAL_AVERAGE_MONTHS;
 
-      // No baseline yet (new category / no prior spend): nothing to compare to.
+
       if (monthlyAverage <= 0) continue;
       if (row.total < monthlyAverage * HISTORICAL_INCREASE_THRESHOLD) continue;
 
@@ -262,15 +262,13 @@ async function generateTipsForUser(userId) {
         title: `${row.name} spending is above your usual average`,
         message: `You've spent ₹${formatNumber(row.total)} on ${row.name} this month, ${growthPercent}% above your usual ₹${formatNumber(Math.round(monthlyAverage))}/month average for the previous ${HISTORICAL_AVERAGE_MONTHS} months. Trimming it back to your usual level would save about ₹${formatNumber(Math.round(increase))}.`,
         category: row.categoryId,
-        // impact-scaled priority is applied by addTip.
         potentialSavings: Math.round(increase),
         priority: 13,
         source: "system",
       });
     }
 
-    // Admin-managed tip templates: render active templates whose trigger
-    // matches the student's current situation.
+
     const exceededBudget = budgets.find((b) => {
       const spent = byCategory[b.category?.name] || 0;
       return b.limitAmount > 0 && spent / b.limitAmount >= 1;

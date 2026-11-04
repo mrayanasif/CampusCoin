@@ -81,11 +81,8 @@ exports.register = async (req, res, next) => {
       savingsGoal: numericGoal,
     });
 
-    // ── Seed an income transaction from the allowance on registration ───
-    // Wrapped in try/catch so a transaction failure never blocks signup.
     if (numericAllowance > 0) {
       try {
-        // category field requires an ObjectId — look up or auto-create the "Allowance" category.
         let allowanceCat = await Category.findOne({ name: "Allowance", type: "income" });
         if (!allowanceCat) {
           allowanceCat = await Category.create({
@@ -108,7 +105,6 @@ exports.register = async (req, res, next) => {
         console.error("Failed to seed allowance transaction:", txError.message);
       }
     }
-    // ─────────────────────────────────────────────────────────────────────
 
     const token = generateToken(user._id, user.role);
     setAuthCookie(res, token);
@@ -141,8 +137,18 @@ exports.login = async (req, res, next) => {
     }
 
     const user = await User.findOne({ email: email.trim().toLowerCase() });
-    if (!user || !user.isActive) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
+    
+
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "User not found. Please register first." 
+      });
+    }
+
+
+    if (!user.isActive) {
+      return res.status(401).json({ success: false, message: "Account is inactive" });
     }
 
     const match = await bcrypt.compare(password, user.password);
@@ -224,7 +230,7 @@ exports.getMe = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-    res.json({ success: true, user: publicUser(user) }); // ← use publicUser for shape parity
+    res.json({ success: true, user: publicUser(user) });
   } catch (error) {
     next(error);
   }

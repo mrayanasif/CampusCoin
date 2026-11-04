@@ -3,8 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import API from '../../api/axios';
 import './Navbar.css';
-import { Logo } from '../common/Logo';
 import { Icon } from '../common/Icons';
+import techLogo from '../../assets/images/tech.png'; 
 
 export const Navbar = ({ currency, onToggleCurrency, theme = 'light', onToggleTheme }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -40,7 +40,7 @@ export const Navbar = ({ currency, onToggleCurrency, theme = 'light', onToggleTh
     try {
       await API.post('/auth/logout');
     } catch {
-      // Clear the local session even when the API is unavailable.
+    
     }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -54,7 +54,14 @@ export const Navbar = ({ currency, onToggleCurrency, theme = 'light', onToggleTh
   const handleNavClick = (event, to) => {
     setMobileMenuOpen(false);
     const hashIndex = to.indexOf('#');
-    if (hashIndex === -1) return;
+    if (hashIndex === -1) {
+      if (to === '/') {
+        event.preventDefault();
+        navigate('/', { replace: location.pathname === '/' });
+        window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+      }
+      return;
+    }
 
     event.preventDefault();
     const targetId = to.slice(hashIndex + 1);
@@ -64,34 +71,46 @@ export const Navbar = ({ currency, onToggleCurrency, theme = 'light', onToggleTh
       });
     };
 
-    if (location.pathname !== '/') {
-      navigate('/');
-      window.setTimeout(scrollToTarget, 0);
-    } else {
-      window.history.replaceState(null, '', `/#${targetId}`);
-      scrollToTarget();
-    }
+    navigate(`/#${targetId}`, { replace: location.pathname === '/' });
+    window.setTimeout(scrollToTarget, 0);
   };
 
   const navLinks = [
     { label: 'Home', to: '/' },
     { label: 'About Us', to: '/#features' },
     { label: 'Portfolio', to: '/#services' },
-    { label: 'Sitemap', to: '/#faq' },
+    { label: 'Budget Simulator', to: '/#simulator' },
     { label: 'Contact Us', to: '/#get-started' },
   ];
 
   return (
     <header className="navbar-sticky">
       <div className="container navbar-container">
-        {/* Left: Brand Logo */}
         <div className="navbar-brand-wrapper">
-          <Link to="/" className="navbar-brand-link" onClick={() => setMobileMenuOpen(false)}>
-            <Logo size="medium" />
+          <Link
+            to="/"
+            className="navbar-brand-link"
+            onClick={(event) => handleNavClick(event, '/')}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px', 
+              textDecoration: 'none', 
+              color: 'var(--text-primary, #0a0a0a)' 
+            }}
+          >
+            <img 
+              src={techLogo} 
+              alt="Campus Coin Logo" 
+              style={{ height: '32px', width: 'auto', objectFit: 'contain' }} 
+            />
+            <span style={{ fontWeight: '700', fontSize: '16px', letterSpacing: '-0.2px' }}>
+              Campus Coin
+            </span>
           </Link>
         </div>
 
-        {/* Center: Desktop Navigation Links (Unified, Clean Spacing) */}
+
         <nav className="navbar-desktop-nav" aria-label="Main Navigation">
           {navLinks.map((link) => (
             <Link key={link.label} to={link.to} className="nav-link" onClick={(event) => handleNavClick(event, link.to)}>
@@ -100,9 +119,8 @@ export const Navbar = ({ currency, onToggleCurrency, theme = 'light', onToggleTh
           ))}
         </nav>
 
-        {/* Right: Theme Toggle, Currency Toggle, Auth, CTA & Mobile Hamburger */}
+
         <div className="navbar-actions-wrapper">
-          {/* Theme Switcher Pill */}
           <button
             type="button"
             className="theme-toggle-btn"
@@ -114,7 +132,7 @@ export const Navbar = ({ currency, onToggleCurrency, theme = 'light', onToggleTh
             <span className="theme-toggle-label">{theme === 'dark' ? 'Light' : 'Dark'}</span>
           </button>
 
-          {/* Currency Switcher Pill */}
+
           <button
             type="button"
             className="currency-toggle-btn"
@@ -125,7 +143,7 @@ export const Navbar = ({ currency, onToggleCurrency, theme = 'light', onToggleTh
             <span>{currency === 'PKR' ? 'PKR ₨' : 'USD $'}</span>
           </button>
 
-          {/* Login Link (Desktop) */}
+
           {authenticated ? (
             <button type="button" className="nav-link nav-login-link desktop-only nav-logout-btn" onClick={handleLogout} disabled={loggingOut}>
               {loggingOut ? 'Logging out…' : 'Log Out'}
@@ -136,13 +154,13 @@ export const Navbar = ({ currency, onToggleCurrency, theme = 'light', onToggleTh
             </Link>
           )}
 
-          {/* Primary CTA */}
+
           <Link to={authenticated ? dashboardPath : '/register'} className="btn btn-primary btn-sm nav-cta-btn">
             <span>{authenticated ? 'Dashboard' : 'Get Campus Coin'}</span>
             {!authenticated && <Icon name="arrowRight" size={14} />}
           </Link>
 
-          {/* Mobile Menu Hamburger Button */}
+
           <button
             type="button"
             className="navbar-icon-btn mobile-menu-btn"
@@ -154,7 +172,7 @@ export const Navbar = ({ currency, onToggleCurrency, theme = 'light', onToggleTh
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+
       {mobileMenuOpen && (
         <div className="mobile-menu-drawer">
           <nav className="mobile-nav-list">

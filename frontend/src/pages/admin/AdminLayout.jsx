@@ -9,6 +9,7 @@ import {
   Megaphone,
   Menu,
   MessagesSquare,
+  Moon,
   Settings,
   ShieldCheck,
   UsersRound,
@@ -23,22 +24,30 @@ import "./AdminLayout.css";
 function AdminLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      return Boolean(JSON.parse(localStorage.getItem("admin_preferences") || "{}").darkMode);
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
-    const prefs = JSON.parse(
-      localStorage.getItem("admin_preferences") || "{}"
-    );
-
-    if (prefs.darkMode) {
-      document.body.classList.add("dark-mode");
-    } else {
-      document.body.classList.remove("dark-mode");
-    }
-
     return () => {
       document.body.classList.remove("dark-mode");
     };
   }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle("dark-mode", darkMode);
+    let preferences = {};
+    try {
+      preferences = JSON.parse(localStorage.getItem("admin_preferences") || "{}");
+    } catch {
+      preferences = {};
+    }
+    localStorage.setItem("admin_preferences", JSON.stringify({ ...preferences, darkMode }));
+  }, [darkMode]);
 
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -133,6 +142,15 @@ function AdminLayout() {
         </nav>
 
         <div className="admin-sidebar-footer">
+          <button
+            type="button"
+            className="admin-dark-mode-toggle"
+            onClick={() => setDarkMode((current) => !current)}
+            aria-pressed={darkMode}
+          >
+            <span><Moon size={17} />Dark mode</span>
+            <i className={darkMode ? "is-on" : ""}><b /></i>
+          </button>
           <button type="button" className="admin-website" onClick={() => { closeSidebar(); navigate("/"); }}>
             <Globe2 size={18} />
             Visit Website

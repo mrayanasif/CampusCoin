@@ -3,11 +3,11 @@ const Transaction = require("../models/Transaction");
 const Notification = require("../models/Notification");
 const { currentMonth, monthRange } = require("../utils/validation");
 
-async function checkBudgetAlert(userId, categoryId, type) {
+async function checkBudgetAlert(userId, categoryId, type, requestedMonth = currentMonth()) {
   try {
     if (type !== "expense") return null;
 
-    const month = currentMonth();
+    const month = requestedMonth;
     const { start, end } = monthRange(month);
 
     const budgets = await Budget.find({
@@ -62,8 +62,6 @@ async function checkBudgetAlert(userId, categoryId, type) {
     });
 
     if (!alertType) {
-      // Spending dropped back under the threshold (e.g. transaction deleted):
-      // stop the alert from being shown as unread.
       if (existing && !existing.isRead) {
         existing.isRead = true;
         await existing.save();

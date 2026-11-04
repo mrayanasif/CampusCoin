@@ -65,9 +65,21 @@ function Login() {
         }
       }, 500);
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Login failed. Please try again.";
-      toast.error(message);
+      const status = error.response?.status;
+      const message = error.response?.data?.message || "Login failed. Please try again.";
+
+
+      if (status === 404 || message.toLowerCase().includes("user not found")) {
+        toast.error("User not found. Please register first.");
+        
+
+        setTimeout(() => {
+          navigate("/register");
+        }, 1500);
+      } else {
+
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }

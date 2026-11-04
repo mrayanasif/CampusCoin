@@ -333,10 +333,33 @@
 }
 
 .budget-form-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.8fr) auto;
+  align-items: start;
+  gap: 14px;
+}
+
+.budget-category-field {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.budget-form-fields .budget-category-field select {
+  width: 100%;
+  min-width: 0;
+  flex: initial;
+}
+
+.budget-form-hint {
+  color: #737373;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.budget-category-field select option:disabled {
+  color: #9ca3af;
 }
 
 .budget-form-fields select {
@@ -345,7 +368,14 @@
 }
 
 .budget-form-fields input {
-  width: 200px;
+  width: 100%;
+  min-width: 0;
+}
+
+.budget-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .budget-save-btn {
@@ -937,7 +967,26 @@
     flex: auto;
   }
 
-  .budget-form button {
+  .budget-form-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .budget-form-actions {
+    justify-content: flex-end;
+  }
+
+  .budget-form-actions button {
+    width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .budget-form-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .budget-form-actions button {
     width: 100%;
   }
 }
@@ -980,6 +1029,14 @@ body.dark-mode .budget-form input {
 body.dark-mode .budget-form select option {
   background-color: #1f1f24;
   color: #f3f4f6;
+}
+
+body.dark-mode .budget-category-field select option:disabled {
+  color: #737373;
+}
+
+body.dark-mode .budget-form-hint {
+  color: #a3a3a3;
 }
 
 body.dark-mode .budget-table-wrap {

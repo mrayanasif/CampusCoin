@@ -3,7 +3,7 @@ const dns = require("node:dns");
 const mongoose = require("mongoose");
 const Category = require("../models/Category");
 
-// Fix MongoDB SRV DNS resolution
+
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 let cached = global.mongoose;
@@ -17,12 +17,10 @@ if (!cached) {
 }
 
 async function ConnectDB() {
-  // Reuse an existing connection
   if (cached.conn) {
     return cached.conn;
   }
 
-  // Check environment variable
   if (!process.env.DBURI) {
     throw new Error(
       "DBURI is missing. Check your backend .env file."
@@ -62,7 +60,6 @@ async function ConnectDB() {
     throw error;
   }
 
-  // Seed default categories only once per cached connection
   if (!cached.seeded) {
     cached.seeded = true;
 

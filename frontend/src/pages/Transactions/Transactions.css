@@ -103,6 +103,18 @@
   border-color: #0a0a0a;
 }
 
+.receipt-scan-trigger:hover {
+  background-color: #eef8d8;
+  color: #36551a;
+  border-color: #a5cf59;
+}
+
+body.dark-mode .receipt-scan-trigger:hover {
+  background-color: #29351e;
+  color: #d7f4a1;
+  border-color: #617d34;
+}
+
 /* ============================================================
    4. TOOLBAR (tabs + search)
    ============================================================ */
@@ -140,6 +152,32 @@
 .transaction-tabs button.active {
   color: #0a0a0a;
   background-color: #C7F36B;
+}
+
+.transaction-action-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.csv-delete-all-btn {
+  display: inline-flex;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  color: #b42318;
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+
+.csv-delete-all-btn:hover {
+  color: #991b1b;
+  background: #fef2f2;
 }
 
 .transaction-search {
@@ -322,6 +360,106 @@
   border-radius: 14px;
   max-height: 90vh;
   overflow-y: auto;
+}
+
+.transaction-form-actions {
+  position: relative;
+}
+
+.transaction-form-error {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
+  z-index: 5;
+  width: max-content;
+  max-width: min(420px, calc(100vw - 48px));
+  margin: 0;
+  padding: 10px 14px;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fecdca;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(127, 29, 29, 0.14);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.transaction-form-error::after {
+  position: absolute;
+  right: 22px;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  content: "";
+  background: #fef3f2;
+  border-right: 1px solid #fecdca;
+  border-bottom: 1px solid #fecdca;
+  transform: rotate(45deg);
+}
+
+.delete-confirm-modal {
+  max-width: 420px;
+  padding: 30px;
+  text-align: center;
+}
+
+.delete-confirm-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  place-items: center;
+  color: #dc2626;
+  background: #fef2f2;
+  border-radius: 50%;
+}
+
+.delete-confirm-modal h2 {
+  margin: 0 0 8px;
+  color: #1a1a1a;
+  font-family: "Archivo", sans-serif;
+  font-size: 20px;
+}
+
+.delete-confirm-modal > p {
+  margin: 0;
+  color: #737373;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+  gap: 10px;
+}
+
+.delete-confirm-actions button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.delete-cancel-button {
+  color: #404040;
+  background: #fff;
+  border: 1px solid #d4d4d4;
+}
+
+.delete-confirm-button {
+  color: #fff;
+  background: #dc2626;
+  border: 1px solid #dc2626;
+}
+
+.delete-confirm-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .modal-heading {
@@ -591,6 +729,142 @@
   max-width: 920px;
 }
 
+.receipt-modal {
+  max-width: 660px;
+}
+
+.receipt-modal .modal-heading {
+  margin-bottom: 18px;
+}
+
+.receipt-modal .modal-heading h2 {
+  margin-bottom: 4px;
+}
+
+.receipt-modal .modal-heading p {
+  margin: 0;
+  color: #737373;
+  font-size: 13px;
+}
+
+.receipt-image-picker {
+  position: relative;
+  display: flex;
+  min-height: 48px;
+  margin-bottom: 14px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #476a25;
+  background: #f7fbea;
+  border: 1px dashed #a5cf59;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.receipt-image-picker:hover {
+  background: #eef8d8;
+}
+
+.receipt-image-picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.receipt-preview-wrap {
+  display: flex;
+  max-height: 235px;
+  margin-bottom: 14px;
+  padding: 8px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+}
+
+.receipt-preview-wrap img {
+  display: block;
+  max-width: 100%;
+  max-height: 218px;
+  object-fit: contain;
+}
+
+.receipt-reading-status {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 16px;
+  color: #587d20;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.receipt-progress-track {
+  grid-column: 1 / -1;
+  height: 6px;
+  overflow: hidden;
+  background: #e7e5e4;
+  border-radius: 999px;
+}
+
+.receipt-progress-track i {
+  display: block;
+  height: 100%;
+  background: #8ebd3c;
+  transition: width 0.2s ease;
+}
+
+.receipt-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.receipt-modal .modal-field small {
+  display: block;
+  margin-top: 5px;
+  color: #737373;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+body.dark-mode .receipt-modal .modal-heading p,
+body.dark-mode .receipt-modal .modal-field small {
+  color: #a3a3a3;
+}
+
+body.dark-mode .receipt-image-picker {
+  color: #d7f4a1;
+  background: #20291a;
+  border-color: #617d34;
+}
+
+body.dark-mode .receipt-image-picker:hover {
+  background: #29351e;
+}
+
+body.dark-mode .receipt-preview-wrap {
+  background: #101312;
+  border-color: #38413d;
+}
+
+body.dark-mode .receipt-reading-status {
+  color: #c7f36b;
+}
+
+body.dark-mode .receipt-progress-track {
+  background: #303734;
+}
+
 .csv-instructions {
   margin-bottom: 16px;
   color: #525252;
@@ -695,6 +969,26 @@
 .csv-result-error {
   background-color: #fee2e2;
   color: #991b1b;
+}
+
+.csv-failed-rows {
+  margin-top: 12px;
+  padding: 10px 12px;
+  color: #991b1b;
+  background: #fff1f0;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+
+.csv-failed-rows ul {
+  display: grid;
+  gap: 5px;
+  margin: 7px 0 0;
+  padding-left: 20px;
+}
+
+.csv-failed-rows li {
+  line-height: 1.45;
 }
 
 /* CSV preview */
@@ -1153,6 +1447,16 @@ body.dark-mode .transaction-tabs button.active {
   background-color: #C7F36B;
 }
 
+body.dark-mode .csv-delete-all-btn {
+  color: #fca5a5;
+  background: #261a1b;
+  border-color: #6b3034;
+}
+
+body.dark-mode .csv-delete-all-btn:hover {
+  background: #3a2022;
+}
+
 body.dark-mode .transaction-search {
   background-color: #1f1f24;
   border-color: #2f2f36;
@@ -1232,6 +1536,36 @@ body.dark-mode .deleted-hint {
 
 body.dark-mode .transaction-modal {
   background-color: #17171a;
+}
+
+body.dark-mode .transaction-form-error {
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.22);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+body.dark-mode .transaction-form-error::after {
+  background: #321d1e;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+body.dark-mode .delete-confirm-modal h2 {
+  color: #f3f4f6;
+}
+
+body.dark-mode .delete-confirm-modal > p {
+  color: #a3a3a3;
+}
+
+body.dark-mode .delete-confirm-icon {
+  color: #f87171;
+  background: rgba(220, 38, 38, 0.15);
+}
+
+body.dark-mode .delete-cancel-button {
+  color: #e5e7eb;
+  background: #2a2a2e;
+  border-color: #404047;
 }
 
 body.dark-mode .modal-heading h2 {
@@ -1401,6 +1735,12 @@ body.dark-mode .csv-result-error {
   color: #fecaca;
 }
 
+body.dark-mode .csv-failed-rows {
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.22);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
 body.dark-mode .csv-preview-loading {
   color: #C7F36B;
   background-color: rgba(199, 243, 107, 0.12);
@@ -1565,5 +1905,10 @@ body.dark-mode .budget-warning-hint {
 
   .transaction-actions button {
     flex: 1;
+  }
+
+  .receipt-fields-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 }

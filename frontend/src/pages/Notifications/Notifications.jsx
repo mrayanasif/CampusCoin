@@ -15,6 +15,7 @@ import {
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
+import { formatCurrency, toPKR, useCurrency } from "../../context/CurrencyContext";
 import "./Notifications.css";
 
 const TYPE_META = {
@@ -40,9 +41,22 @@ function timeAgo(dateStr) {
 
 function Notifications() {
   const navigate = useNavigate();
+  const { currency } = useCurrency();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+
+  const formatNotificationText = (text) =>
+    String(text || "").replace(
+      /(?:₹|₨|Rs\.?|PKR|INR|USD|\$)\s*([\d,]+(?:\.\d+)?)/gi,
+      (match, amount) => {
+        const sourceCurrency = /USD|\$/i.test(match) ? "USD" : "PKR";
+        return formatCurrency(
+          toPKR(Number(amount.replace(/,/g, "")), sourceCurrency),
+          currency
+        );
+      }
+    );
 
   useEffect(() => {
     if (!localStorage.getItem("token")) {
@@ -220,7 +234,7 @@ function Notifications() {
                     <h3>{n.title}</h3>
                     {!n.isRead && <span className="notif-unread-dot" />}
                   </div>
-                  <p>{n.message}</p>
+                  <p>{formatNotificationText(n.message)}</p>
                   <div className="notif-meta">
                     <span className="notif-type">{meta.label}</span>
                     <span className="notif-time">{timeAgo(n.createdAt)}</span>

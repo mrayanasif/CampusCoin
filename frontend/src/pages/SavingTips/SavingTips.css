@@ -2,6 +2,32 @@
   min-height: 100vh;
 }
 
+.saving-tips-refresh-btn {
+  display: inline-flex;
+  min-height: 42px;
+  padding: 0 15px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #36551a;
+  background: #fff;
+  border: 1px solid #9bc34b;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.saving-tips-refresh-btn:hover:not(:disabled) {
+  background: #f3f9e9;
+}
+
+.saving-tips-refresh-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .tips-intro {
   display: flex;
   margin-bottom: 20px;
@@ -205,6 +231,16 @@
 
 body.dark-mode .saving-tips-page {
   background-color: #0a0a0a;
+}
+
+body.dark-mode .saving-tips-refresh-btn {
+  color: #d7f4a1;
+  background: #20291a;
+  border-color: #617d34;
+}
+
+body.dark-mode .saving-tips-refresh-btn:hover:not(:disabled) {
+  background: #29351e;
 }
 
 body.dark-mode .tips-intro {

@@ -8,14 +8,72 @@ const { generateAiInsightsAndTips } = require("./groq.service");
 const FLAG_GROWTH_THRESHOLD = 20;
 const FLAG_BASELINE_MONTHS = 3;
 
-/**
- * Generate (and upsert) the AI-style monthly narrative insight for a user using Groq AI.
- * - Compares current month spending with previous month;
- * - Generates spendingInsight (e.g. "You spent 40% more on Food this month compared to last month.");
- * - Generates 1-line recommendation (e.g. "Try cooking at home to save around $30!");
- * - Synchronizes with Saving Tips (e.g. "Limit food delivery to 2 times a week (Save $25/month)");
- * - Stored in Insight collection and synced into SavingTip collection.
- */
+async function syncInsightTips(userId, insight) {
+  const storedTips = Array.isArray(insight?.syncedTips) ? insight.syncedTips : [];
+  const flaggedCategory = insight?.flaggedCategories?.[0];
+  const syncedTips = storedTips.length
+    ? storedTips
+    : insight
+      ? [{
+          title: flaggedCategory?.categoryName
+            ? `Review your ${flaggedCategory.categoryName} spending`
+            : "Your latest spending insight",
+          message: [
+            flaggedCategory?.message,
+            insight.spendingInsight || insight.summaryText,
+            insight.recommendation || insight.tipText,
+          ].filter(Boolean).join(" "),
+          potentialSavings: 0,
+          category: flaggedCategory?.categoryName || "",
+        }]
+      : [];
+
+  await SavingTip.updateMany(
+    {
+      user: userId,
+      source: { $in: ["insight", "ai"] },
+      isDismissed: false,
+      isPinned: false,
+    },
+    { $set: { isDismissed: true } }
+  );
+
+  if (syncedTips.length) {
+    const tips = [];
+    for (let index = 0; index < syncedTips.length; index += 1) {
+      const tip = syncedTips[index];
+      let category = null;
+      if (tip.category) {
+        const escapedCategory = String(tip.category).replace(/[.*+?^${}()|[\\]\\]/g, "\\$&");
+        const categoryDoc = await Category.findOne({
+          name: new RegExp(`^${escapedCategory}$`, "i"),
+        }).select("_id");
+        category = categoryDoc?._id || null;
+      }
+
+      tips.push({
+        user: userId,
+        title: String(tip.title || "Personalized saving tip").slice(0, 120),
+        message: String(tip.message || "Review your recent spending and choose one area to reduce.").slice(0, 1000),
+        potentialSavings: Math.max(0, Number(tip.potentialSavings) || 0),
+        category,
+        priority: 80 - index * 5,
+        source: "insight",
+        insightMonth: insight.month,
+      });
+    }
+
+    await SavingTip.insertMany(tips);
+  }
+
+  return SavingTip.find({ user: userId, isDismissed: false }).sort({
+    isPinned: -1,
+    priority: -1,
+    potentialSavings: -1,
+  });
+}
+
+
 async function generateInsightForUser(userId, options = {}) {
   const month = options.month || currentMonth();
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
@@ -26,12 +84,12 @@ async function generateInsightForUser(userId, options = {}) {
 
   const { start, end } = monthRange(month);
 
-  // Baseline: the previous 3 months
+
   const baselineStart = new Date(start);
   baselineStart.setUTCMonth(baselineStart.getUTCMonth() - FLAG_BASELINE_MONTHS);
   const baselineEnd = new Date(start);
 
-  // Last month specifically for direct comparison
+
   const lastMonthStart = new Date(start);
   lastMonthStart.setUTCMonth(lastMonthStart.getUTCMonth() - 1);
   const lastMonthEnd = new Date(start);
@@ -98,7 +156,7 @@ async function generateInsightForUser(userId, options = {}) {
     total: info.total,
   }));
 
-  // Generate with Groq AI (with smart fallback)
+
   const aiOutput = await generateAiInsightsAndTips({
     thisMonthName: monthName,
     thisMonthExpense: totalExpense,
@@ -107,14 +165,14 @@ async function generateInsightForUser(userId, options = {}) {
     topCategorySpent,
     topCategoryLastMonth,
     categoryBreakdown,
-    currency: "$",
+    currency: "₨ ",
   });
 
   const spendingInsight =
     aiOutput.spendingInsight ||
     `You spent 40% more on ${topCategoryName} this month compared to last month.`;
   const recommendation =
-    aiOutput.recommendation || "Try cooking at home to save around $30!";
+    aiOutput.recommendation || "Try cooking at home to save around ₨ 500!";
   const syncedTips = aiOutput.savingTips || [];
 
   const flaggedCategories = [];
@@ -142,7 +200,7 @@ async function generateInsightForUser(userId, options = {}) {
     }
   }
 
-  // Upsert the Insight record
+
   const insight = await Insight.findOneAndUpdate(
     { user: userId, month },
     {
@@ -152,6 +210,7 @@ async function generateInsightForUser(userId, options = {}) {
       tipText: recommendation,
       spendingInsight,
       recommendation,
+      currency: "PKR",
       syncedTips,
       flaggedCategories: flaggedCategories.map((flag) => ({
         category: flag.categoryId,
@@ -165,38 +224,10 @@ async function generateInsightForUser(userId, options = {}) {
     { new: true, upsert: true, runValidators: true }
   );
 
-  // Sync the generated tips into the SavingTip collection so they are available in /saving-tips and Dashboard
-  if (Array.isArray(syncedTips) && syncedTips.length > 0) {
-    for (let i = 0; i < syncedTips.length; i++) {
-      const tipData = syncedTips[i];
-      let catDoc = null;
-      if (tipData.category) {
-        catDoc = await Category.findOne({
-          name: new RegExp(`^${tipData.category}$`, "i"),
-        }).select("_id");
-      }
 
-      await SavingTip.findOneAndUpdate(
-        {
-          user: userId,
-          title: tipData.title,
-        },
-        {
-          user: userId,
-          title: tipData.title,
-          message: tipData.message || `Managing ${tipData.category || "expenses"} can save money.`,
-          potentialSavings: Number(tipData.potentialSavings) || 15,
-          category: catDoc?._id || null,
-          priority: 80 - i * 5,
-          source: "ai",
-          isDismissed: false,
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
-    }
-  }
+  await syncInsightTips(userId, insight);
 
   return insight;
 }
 
-module.exports = { generateInsightForUser };
+module.exports = { generateInsightForUser, syncInsightTips };

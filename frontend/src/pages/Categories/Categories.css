@@ -1,7 +1,28 @@
 .category-layout {
   display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+.category-add-top {
+  display: inline-flex;
+  min-height: 42px;
+  padding: 0 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #0a0a0a;
+  background: #c7f36b;
+  border: 0;
+  border-radius: 9px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.category-add-top:hover {
+  background: #b8e854;
 }
 
 .category-form-panel,
@@ -334,8 +355,13 @@ body.dark-mode .category-modal-actions .category-modal-cancel:hover:not(:disable
 }
 
 @media (max-width: 800px) {
-  .category-layout {
-    grid-template-columns: 1fr;
+  .category-page-heading {
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .category-add-top {
+    flex: 0 0 auto;
   }
 }
 

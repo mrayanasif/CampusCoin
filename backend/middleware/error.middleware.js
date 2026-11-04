@@ -1,13 +1,12 @@
 const errorHandler = (err, req, res, next) => {
-  // Keep a server-side trace for debugging, but never leak internals to clients
-  // for unexpected failures.
+
   console.error(err.stack || err);
 
   let statusCode = err.statusCode || err.status || 500;
   let message = err.message || "Server Error";
   let errors;
 
-  // Mongoose: malformed ObjectId / invalid cast -> client error, not 500.
+
   if (err.name === "CastError") {
     statusCode = 400;
     const path = err.path ? ` for "${err.path}"` : "";

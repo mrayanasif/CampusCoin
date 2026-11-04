@@ -6,11 +6,11 @@ import {
   Pencil,
   X,
   Settings as SettingsIcon,
-  Moon,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../../api/axios";
+import AdminConfirmModal from "../../../components/AdminConfirmModal/AdminConfirmModal";
 import "./Settings.css";
 
 function Settings() {
@@ -22,24 +22,12 @@ function Settings() {
   const [editKey, setEditKey] = useState("");
   const [editValue, setEditValue] = useState("");
 
-  const [adminDarkMode, setAdminDarkMode] = useState(false);
+  const [settingToDelete, setSettingToDelete] = useState(null);
+  const [deletingSetting, setDeletingSetting] = useState(false);
 
   useEffect(() => {
-    const prefs = JSON.parse(
-      localStorage.getItem("admin_preferences") || "{}"
-    );
-    if (prefs.darkMode) setAdminDarkMode(prefs.darkMode);
-
     fetchSettings();
   }, []);
-
-  useEffect(() => {
-    document.body.classList.toggle("dark-mode", adminDarkMode);
-    localStorage.setItem(
-      "admin_preferences",
-      JSON.stringify({ darkMode: adminDarkMode })
-    );
-  }, [adminDarkMode]);
 
   const fetchSettings = async () => {
     try {
@@ -103,14 +91,18 @@ function Settings() {
     }
   };
 
-  const deleteSetting = async (key) => {
-    if (!window.confirm(`Delete setting "${key}"?`)) return;
+  const deleteSetting = async () => {
+    if (!settingToDelete || deletingSetting) return;
     try {
-      await API.delete(`/admin/settings/${key}`);
+      setDeletingSetting(true);
+      await API.delete(`/admin/settings/${settingToDelete}`);
       toast.success("Deleted");
-      setSettings((curr) => curr.filter((s) => s.key !== key));
+      setSettings((curr) => curr.filter((s) => s.key !== settingToDelete));
+      setSettingToDelete(null);
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
+    } finally {
+      setDeletingSetting(false);
     }
   };
 
@@ -120,28 +112,6 @@ function Settings() {
         <div>
           <h1>System Settings</h1>
           <p>Configure global values for Campus Coin.</p>
-        </div>
-      </div>
-
-      <div className="admin-appearance-card">
-        <div className="admin-appearance-row">
-          <div className="admin-appearance-icon">
-            <Moon size={18} />
-          </div>
-
-          <div className="admin-appearance-text">
-            <strong>Admin Dark Mode</strong>
-            <span>Applies to admin panel only (not student panel)</span>
-          </div>
-
-          <label className="admin-switch">
-            <input
-              type="checkbox"
-              checked={adminDarkMode}
-              onChange={(e) => setAdminDarkMode(e.target.checked)}
-            />
-            <span />
-          </label>
         </div>
       </div>
 
@@ -243,7 +213,7 @@ function Settings() {
                       <button
                         type="button"
                         className="settings-del-btn"
-                        onClick={() => deleteSetting(s.key)}
+                        onClick={() => setSettingToDelete(s.key)}
                       >
                         <Trash2 size={15} />
                       </button>
@@ -254,6 +224,17 @@ function Settings() {
             );
           })}
         </div>
+      )}
+
+      {settingToDelete && (
+        <AdminConfirmModal
+          title="Delete setting?"
+          message={`Are you sure you want to delete the setting “${settingToDelete}”? This action cannot be undone.`}
+          confirmLabel="Delete setting"
+          loading={deletingSetting}
+          onCancel={() => setSettingToDelete(null)}
+          onConfirm={deleteSetting}
+        />
       )}
     </div>
   );

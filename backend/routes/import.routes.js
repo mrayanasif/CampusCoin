@@ -4,7 +4,7 @@ const importController = require("../controllers/import.controller");
 const { protect } = require("../middleware/auth.middleware");
 const { rateLimit } = require("../middleware/rateLimit.middleware");
 
-// Imports are heavier operations: 10 requests/minute per client IP.
+
 router.use(
   rateLimit({
     windowMs: 60 * 1000,
@@ -13,7 +13,7 @@ router.use(
   })
 );
 
-// Dry-run: parse rows and return AI category suggestions (no DB writes).
+
 router.post("/preview", protect, importController.preview);
 router.post("/csv", protect, importController.uploadCSV);
 router.get("/batches", protect, importController.getBatches);

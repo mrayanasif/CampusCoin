@@ -4,7 +4,7 @@ const authController = require("../controllers/auth.controller");
 const { protect, studentOnly } = require("../middleware/auth.middleware");
 const { rateLimit } = require("../middleware/rateLimit.middleware");
 
-// Sensitive auth endpoints: 10 requests/minute per client IP.
+
 const authLimitOptions = {
   windowMs: 60 * 1000,
   max: 10,

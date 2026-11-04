@@ -50,6 +50,12 @@ const userSchema = new mongoose.Schema(
       min: 0,
     },
 
+    savingsConfigured: {
+      type: Boolean,
+      default: false,
+    },
+
+
     profileImage: {
       type: String,
       default: "",

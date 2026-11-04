@@ -1,0 +1,114 @@
+.admin-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  padding: 20px;
+  place-items: center;
+  background: rgba(9, 12, 10, 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.admin-confirm-modal {
+  width: min(100%, 420px);
+  padding: 28px;
+  color: #20231f;
+  background: #fff;
+  border: 1px solid #ebe9e1;
+  border-radius: 16px;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
+  text-align: center;
+  animation: admin-confirm-enter 0.16s ease-out;
+}
+
+@keyframes admin-confirm-enter {
+  from { opacity: 0; transform: translateY(7px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.admin-confirm-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 15px;
+  place-items: center;
+  color: #c83e35;
+  background: #fff0ee;
+  border-radius: 50%;
+}
+
+.admin-confirm-modal h2 {
+  margin: 0 0 8px;
+  color: #20231f;
+  font-family: "Archivo", sans-serif;
+  font-size: 20px;
+}
+
+.admin-confirm-modal p {
+  margin: 0;
+  color: #747a72;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.admin-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.admin-confirm-actions button {
+  min-height: 40px;
+  padding: 0 16px;
+  color: #476a25;
+  background: #fff;
+  border: 1px solid #cddbb9;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-confirm-actions .confirm-delete {
+  color: #fff;
+  background: #d83a32;
+  border-color: #d83a32;
+}
+
+.admin-confirm-actions .confirm-delete.confirm-primary {
+  color: #10130c;
+  background: #c7f36b;
+  border-color: #c7f36b;
+}
+
+.admin-confirm-actions .confirm-delete.confirm-primary:hover:not(:disabled) {
+  background: #b7e95a;
+  border-color: #b7e95a;
+}
+
+.admin-confirm-actions button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+body.dark-mode .admin-confirm-modal {
+  color: #f3f4f6;
+  background: #17171a;
+  border-color: #2a2a2e;
+}
+
+body.dark-mode .admin-confirm-modal h2 {
+  color: #f3f4f6;
+}
+
+body.dark-mode .admin-confirm-modal p {
+  color: #a3a3a3;
+}
+
+body.dark-mode .admin-confirm-actions button:not(.confirm-delete) {
+  color: #c7f36b;
+  background: #1f1f24;
+  border-color: #495b34;
+}

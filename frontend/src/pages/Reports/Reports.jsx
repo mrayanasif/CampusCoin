@@ -31,7 +31,7 @@ import {
 } from "../../components/Skeleton/Skeleton";
 import "./Reports.css";
 
-const COLORS = ["#14532d", "#15803d", "#22c55e", "#4d7c0f", "#65a30d", "#84cc16"];
+const COLORS = ["#064e3b", "#047857", "#059669", "#16a34a", "#65a30d", "#a3e635", "#34d399", "#166534"];
 
 function Reports() {
   const navigate = useNavigate();
@@ -81,30 +81,35 @@ function Reports() {
   };
 
   const computeDateRange = () => {
+    const localDateString = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
     if (filters.dateRange === "custom") {
       return {
         from: filters.from || null,
-        to: filters.to || new Date().toISOString().slice(0, 10),
+        to: filters.to || localDateString(new Date()),
       };
     }
 
     const now = new Date();
-    const to = now.toISOString().slice(0, 10);
+    const to = localDateString(now);
     let from = null;
 
     if (filters.dateRange === "thisMonth") {
-      from = new Date(now.getFullYear(), now.getMonth(), 1)
-        .toISOString()
-        .slice(0, 10);
+      from = localDateString(new Date(now.getFullYear(), now.getMonth(), 1));
     } else if (filters.dateRange === "last30") {
       const d = new Date(now);
       d.setDate(d.getDate() - 29);
-      from = d.toISOString().slice(0, 10);
+      from = localDateString(d);
     } else if (filters.dateRange === "last6") {
       const d = new Date(now);
       d.setMonth(d.getMonth() - 5);
       d.setDate(1);
-      from = d.toISOString().slice(0, 10);
+      from = localDateString(d);
     }
 
     return { from, to };
@@ -183,6 +188,21 @@ function Reports() {
       if (to) params.append("to", to);
       if (filters.category !== "all") params.append("category", filters.category);
 
+
+      let dashboardBalance = null;
+      const useDashboardTotals =
+        filters.dateRange === "thisMonth" &&
+        filters.category === "all" &&
+        filters.type === "all";
+      if (useDashboardTotals) {
+        try {
+          const dashboardRes = await API.get("/dashboard");
+          dashboardBalance = dashboardRes.data?.balance || null;
+        } catch (error) {
+          console.error("Could not load dashboard totals for reports:", error);
+        }
+      }
+
       const res = await API.get(`/reports/filter?${params.toString()}`);
       let txns = res.data.transactions || [];
 
@@ -190,14 +210,29 @@ function Reports() {
         txns = txns.filter((t) => t.type === filters.type);
       }
 
-      const income = txns
+      const transactionIncome = txns
         .filter((t) => t.type === "income")
         .reduce((s, t) => s + t.amount, 0);
-      const expense = txns
+      const transactionExpense = txns
         .filter((t) => t.type === "expense")
         .reduce((s, t) => s + t.amount, 0);
+      const income =
+        useDashboardTotals && typeof dashboardBalance?.income === "number"
+          ? dashboardBalance.income
+          : transactionIncome;
+      const expense =
+        useDashboardTotals && typeof dashboardBalance?.expense === "number"
+          ? dashboardBalance.expense
+          : transactionExpense;
 
-      setSummary({ income, expense, savings: income - expense });
+
+      const savings = income - expense;
+      setSummary({
+        income,
+        expense,
+        savings,
+        remainingBalance: income - expense,
+      });
 
       const catMap = {};
       txns
@@ -583,8 +618,12 @@ function Reports() {
             <strong>{formatCurrency(summary.expense, currency)}</strong>
           </div>
           <div>
-            <span>Total Savings</span>
+            <span>Savings This Period</span>
             <strong>{formatCurrency(summary.savings, currency)}</strong>
+          </div>
+          <div>
+            <span>Remaining Balance</span>
+            <strong>{formatCurrency(summary.remainingBalance ?? (summary.income - summary.expense), currency)}</strong>
           </div>
         </div>
 
@@ -599,6 +638,18 @@ function Reports() {
               ) : (
                 <ResponsiveContainer>
                   <LineChart data={monthly}>
+                    <defs>
+                      <linearGradient id="reportsIncomeLine" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#064e3b" />
+                        <stop offset="55%" stopColor="#059669" />
+                        <stop offset="100%" stopColor="#34d399" />
+                      </linearGradient>
+                      <linearGradient id="reportsExpenseLine" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#166534" />
+                        <stop offset="55%" stopColor="#65a30d" />
+                        <stop offset="100%" stopColor="#bef264" />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid stroke="#eee" vertical={false} />
                     <XAxis dataKey="month" />
                     <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
@@ -609,8 +660,8 @@ function Reports() {
                       itemStyle={{ color: "var(--text-main)" }}
                     />
                     <Legend />
-                    <Line dataKey="income" stroke="#15803d" strokeWidth={2.5} />
-                    <Line dataKey="expense" stroke="#84cc16" strokeWidth={2.5} />
+                    <Line dataKey="income" stroke="url(#reportsIncomeLine)" strokeWidth={3} />
+                    <Line dataKey="expense" stroke="url(#reportsExpenseLine)" strokeWidth={3} />
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -690,6 +741,13 @@ function Reports() {
               ) : (
                 <ResponsiveContainer>
                   <BarChart data={weekly}>
+                    <defs>
+                      <linearGradient id="reportsDailyBars" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" />
+                        <stop offset="52%" stopColor="#059669" />
+                        <stop offset="100%" stopColor="#064e3b" />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid stroke="#eee" vertical={false} />
                     <XAxis dataKey="day" />
                     <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
@@ -699,7 +757,7 @@ function Reports() {
                       labelStyle={{ color: "var(--ink-primary)", fontWeight: 700 }}
                       itemStyle={{ color: "var(--text-main)" }}
                     />
-                    <Bar dataKey="amount" fill="#15803d" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="amount" fill="url(#reportsDailyBars)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -716,6 +774,13 @@ function Reports() {
               ) : (
                 <ResponsiveContainer>
                   <BarChart data={weeklySummary}>
+                    <defs>
+                      <linearGradient id="reportsWeeklyBars" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#bef264" />
+                        <stop offset="48%" stopColor="#65a30d" />
+                        <stop offset="100%" stopColor="#166534" />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid stroke="#eee" vertical={false} />
                     <XAxis dataKey="week" />
                     <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
@@ -725,7 +790,7 @@ function Reports() {
                       labelStyle={{ color: "var(--ink-primary)", fontWeight: 700 }}
                       itemStyle={{ color: "var(--text-main)" }}
                     />
-                    <Bar dataKey="amount" fill="#84cc16" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="amount" fill="url(#reportsWeeklyBars)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}

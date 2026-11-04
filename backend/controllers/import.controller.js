@@ -2,6 +2,8 @@ const ImportBatch = require("../models/ImportBatch");
 const Transaction = require("../models/Transaction");
 const Category = require("../models/Category");
 const { suggestCategoryForDescription } = require("../services/ai.service");
+const { checkBudgetAlert } = require("../services/budgetAlert.service");
+const { syncMonthlySavings } = require("./transaction.controller");
 const { escapeRegex, isValidObjectId, parseDate } = require("../utils/validation");
 
 const MAX_ROWS = 1000;
@@ -32,7 +34,12 @@ async function findCategoryForRow(userId, name, type) {
       isActive: true,
       type,
     })) ||
-    (await Category.findOne({ name: exact, isDefault: true, type }))
+    (await Category.findOne({ name: exact, isDefault: true, type })) ||
+    (await Category.findOne({
+      name: exact,
+      isActive: true,
+      $or: [{ isDefault: true }, { createdBy: userId }],
+    }))
   );
 }
 
@@ -63,6 +70,8 @@ exports.uploadCSV = async (req, res, next) => {
     const errors = [];
     const transactionIds = [];
     const seenKeys = new Set();
+    const importedExpenseGroups = new Map();
+    let importedCurrentMonth = false;
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i] || {};
@@ -74,18 +83,19 @@ exports.uploadCSV = async (req, res, next) => {
           throw new Error("Amount must be a number greater than zero");
         }
 
-        const type = normalizeType(row.type);
-        if (!type) throw new Error("Type must be income or expense");
+        const requestedType = normalizeType(row.type);
+        if (!requestedType) throw new Error("Type must be income or expense");
 
         const date = row.date ? parseDate(row.date) : new Date();
         if (!date) throw new Error("Invalid date");
 
-        const category = await findCategoryForRow(req.user.id, row.category, type);
+        const category = await findCategoryForRow(req.user.id, row.category, requestedType);
         if (!category) {
           throw new Error(
-            `Category not found for type ${type}: ${row.category || "(empty)"}`
+            `Category not found for type ${requestedType}: ${row.category || "(empty)"}`
           );
         }
+        const type = category.type;
 
         const description =
           typeof row.description === "string" ? row.description.trim().slice(0, 500) : "";
@@ -106,7 +116,6 @@ exports.uploadCSV = async (req, res, next) => {
 
         const existing = await Transaction.findOne({
           user: req.user.id,
-          type,
           category: category._id,
           amount,
           description,
@@ -121,6 +130,10 @@ exports.uploadCSV = async (req, res, next) => {
         });
 
         if (existing) {
+          if (existing.source === "csv" && existing.type !== type) {
+            existing.type = type;
+            await existing.save();
+          }
           duplicates += 1;
           continue;
         }
@@ -138,6 +151,17 @@ exports.uploadCSV = async (req, res, next) => {
 
         transactionIds.push(transaction._id);
         success += 1;
+        const importedMonth = date.toISOString().slice(0, 7);
+        if (importedMonth === new Date().toISOString().slice(0, 7)) {
+          importedCurrentMonth = true;
+        }
+        if (type === "expense") {
+          const month = importedMonth;
+          importedExpenseGroups.set(`${category._id}:${month}`, {
+            categoryId: category._id,
+            month,
+          });
+        }
       } catch (err) {
         failed += 1;
         if (errors.length < MAX_ERRORS_KEPT) {
@@ -153,6 +177,23 @@ exports.uploadCSV = async (req, res, next) => {
     batch.status = "completed";
     batch.errors = errors;
     await batch.save();
+
+    // Keep the derived savings balance and budget alerts in step with the
+    // newly saved CSV transactions. The transaction rows themselves are the
+    // source of truth for budget and report totals.
+    const followUps = [];
+    if (importedCurrentMonth) {
+      followUps.push(syncMonthlySavings(req.user.id, new Date()));
+    }
+    for (const { categoryId, month } of importedExpenseGroups.values()) {
+      followUps.push(checkBudgetAlert(req.user.id, categoryId, "expense", month));
+    }
+    const followUpResults = await Promise.allSettled(followUps);
+    followUpResults.forEach((result) => {
+      if (result.status === "rejected") {
+        console.error("CSV import follow-up failed:", result.reason?.message || result.reason);
+      }
+    });
 
     res.status(201).json({
       success: true,

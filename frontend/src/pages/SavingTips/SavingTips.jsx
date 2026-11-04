@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bookmark, BookmarkCheck, Leaf, X, Pin, PinOff } from "lucide-react";
+import { Bookmark, BookmarkCheck, Leaf, X, Pin, PinOff, RefreshCw, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../api/axios";
@@ -11,6 +11,7 @@ function SavingTips() {
   const [tips, setTips] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
@@ -18,19 +19,29 @@ function SavingTips() {
       navigate("/login");
       return;
     }
-    fetchTips();
+    fetchTips({ showLoader: true });
     fetchBookmarks();
+    const handleInsightGenerated = () => fetchTips();
+    const handleStorage = (event) => {
+      if (event.key === "campuscoin:insight_generated") fetchTips();
+    };
+    window.addEventListener("campuscoin:insight-generated", handleInsightGenerated);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("campuscoin:insight-generated", handleInsightGenerated);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
-  const fetchTips = async () => {
+  const fetchTips = async ({ showLoader = false } = {}) => {
     try {
-      setLoading(true);
+      if (showLoader) setLoading(true);
       const res = await API.get("/saving-tips");
       setTips(res.data.tips || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load tips");
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
@@ -39,6 +50,19 @@ function SavingTips() {
       const res = await API.get("/bookmarks");
       setBookmarks(res.data.bookmarks || []);
     } catch (error) {}
+  };
+
+  const refreshTips = async () => {
+    try {
+      setRefreshing(true);
+      const res = await API.post("/saving-tips/generate");
+      setTips(res.data.tips || []);
+      toast.success("Saving tips refreshed");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Could not refresh saving tips");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const togglePin = async (id) => {
@@ -109,6 +133,15 @@ function SavingTips() {
           <h1>Saving Tips</h1>
           <p>Suggestions based on your spending habits.</p>
         </div>
+        <button
+          type="button"
+          className="saving-tips-refresh-btn"
+          onClick={refreshTips}
+          disabled={refreshing}
+        >
+          {refreshing ? <Loader2 size={16} className="spin" /> : <RefreshCw size={16} />}
+          {refreshing ? "Refreshing…" : "Refresh tips"}
+        </button>
       </div>
 
       <div className="tips-intro">

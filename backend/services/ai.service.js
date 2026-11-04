@@ -3,9 +3,7 @@ const AIClassification = require("../models/AIClassification");
 const Transaction = require("../models/Transaction");
 const { escapeRegex } = require("../utils/validation");
 
-// Lightweight rule-based categoriser. It is intentionally offline/deterministic
-// (no paid API required) but it *learns* from the user's own corrections and
-// previous transactions, which is what the SRS asks for.
+
 const KEYWORD_RULES = [
   { category: "Food", words: ["cafe", "cafeteria", "food", "lunch", "dinner", "breakfast", "restaurant", "pizza", "burger", "canteen", "biryani", "snack", "coffee", "tea", "meal", "grocery", "groceries", "samosa", "shawarma", "dhaba"] },
   { category: "Transport", words: ["bus", "taxi", "uber", "careem", "rickshaw", "petrol", "fuel", "diesel", "train", "metro", "fare", "transport", "ride", "bike", "van"] },
@@ -51,14 +49,8 @@ function keywordSuggestion(description) {
   return null;
 }
 
-/**
- * Resolve the best category for a free-text description, using (in order):
- * 1. exact match against the user's previous corrections;
- * 2. token overlap with previous corrections (learning);
- * 3. token/keyword rules for the default categories;
- * 4. the user's own transaction history (same words were categorised before);
- * 5. "Miscellaneous" fallback.
- */
+
+
 async function suggestCategoryForDescription(userId, description, options = {}) {
   const text = String(description || "").trim();
   if (!text) return { category: null, confidence: 0, learned: false, source: "none" };
@@ -95,7 +87,7 @@ async function suggestCategoryForDescription(userId, description, options = {}) 
     const overlap = tokens.filter((token) => correctionTokens.includes(token)).length;
     if (overlap === 0) continue;
 
-    // Exact description already handled; partial overlaps get a bounded score.
+
     const score = overlap / Math.max(tokens.length, correctionTokens.length);
     if (score >= 0.5 && (!bestCorrection || score > bestCorrection.score)) {
       bestCorrection = { categoryId: correction.userSelectedCategory, score };
@@ -127,7 +119,7 @@ async function suggestCategoryForDescription(userId, description, options = {}) 
     }
   }
 
-  // Fall back to the user's own history: descriptions sharing a token.
+
   if (tokens.length > 0) {
     const history = await Transaction.find({
       user: userId,
@@ -189,10 +181,7 @@ function shapeSuggestion(result) {
   };
 }
 
-/**
- * Persist / refresh the feedback record for a description so future suggestions
- * can learn from the category the student actually picked.
- */
+
 async function saveCategorizationFeedback(
   userId,
   { description, suggestedCategory, userSelectedCategory, transactionId }

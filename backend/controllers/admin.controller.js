@@ -9,7 +9,6 @@ const isProduction = () => process.env.NODE_ENV === "production";
 
 async function mostUsedCategories(limit = 5) {
   return Transaction.aggregate([
-    // Soft-deleted transactions are not "used" and must not appear in stats.
     { $match: { deletedAt: null } },
     { $group: { _id: "$category", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
@@ -79,7 +78,7 @@ exports.resetUserPassword = async (req, res, next) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // Invalidate any previously issued tokens, then create a fresh one.
+
     await PasswordResetToken.updateMany(
       { user: user._id, used: false },
       { used: true }
@@ -89,7 +88,7 @@ exports.resetUserPassword = async (req, res, next) => {
     await PasswordResetToken.create({
       user: user._id,
       token,
-      expiresAt: new Date(Date.now() + 3600000), // 1 hour
+      expiresAt: new Date(Date.now() + 3600000), 
     });
 
     try {
@@ -146,17 +145,26 @@ exports.getStatsOverview = async (req, res, next) => {
 
 exports.getUsageStats = async (req, res, next) => {
   try {
-    const six = new Date();
-    six.setMonth(six.getMonth() - 5);
-    six.setDate(1);
+    const now = new Date();
+    const six = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    const [data, topCategories] = await Promise.all([
+    const [data, userData, topCategories] = await Promise.all([
       Transaction.aggregate([
         { $match: { deletedAt: null, date: { $gte: six } } },
         {
           $group: {
             _id: { $dateToString: { format: "%Y-%m", date: "$date" } },
             transactions: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+      User.aggregate([
+        { $match: { role: "student", createdAt: { $gte: six } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+            users: { $sum: 1 },
           },
         },
         { $sort: { _id: 1 } },
@@ -179,20 +187,41 @@ exports.getUsageStats = async (req, res, next) => {
       "Dec",
     ];
 
-    const usage = data.map((d) => {
-      const [, month] = d._id.split("-");
+    const transactionsByMonth = new Map(data.map((item) => [item._id, item.transactions]));
+    const usersByMonth = new Map(userData.map((item) => [item._id, item.users]));
+    const usage = Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(six.getFullYear(), six.getMonth() + index, 1);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       return {
-        month: monthNames[parseInt(month, 10) - 1],
-        key: d._id,
-        transactions: d.transactions,
+        month: monthNames[date.getMonth()],
+        key,
+        transactions: transactionsByMonth.get(key) || 0,
+        users: usersByMonth.get(key) || 0,
       };
     });
 
     res.json({
       success: true,
       usage,
+      userGrowth: usage.map(({ month, key, users }) => ({ month, key, users })),
       mostUsedCategories: topCategories,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getRecentTransactions = async (req, res, next) => {
+  try {
+    const existingUserIds = await User.distinct("_id");
+    const transactions = await Transaction.find({ deletedAt: null })
+      .where("user").in(existingUserIds)
+      .sort({ date: -1, createdAt: -1 })
+      .limit(8)
+      .populate("user", "name email")
+      .populate("category", "name");
+
+    res.json({ success: true, transactions });
   } catch (error) {
     next(error);
   }

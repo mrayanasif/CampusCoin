@@ -1,11 +1,10 @@
-
 const Transaction = require("../models/Transaction");
 const SavingTip = require("../models/SavingTip");
 const Insight = require("../models/Insight");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
-const Category = require("../models/Category");
 const Budget = require("../models/Budget");
+const { ensureMonthlyAllowance } = require("../services/allowance.service");
 
 const {
   processDueRecurringForUser,
@@ -32,64 +31,13 @@ const TIP_SORT = {
   potentialSavings: -1,
 };
 
-// Get the authenticated user's actual database record.
+
 async function getAuthenticatedUser(req) {
   const id = req.user?.id || req.user?._id;
 
   if (!id) return null;
 
   return User.findById(id).select("-password");
-}
-
-// Create the current month's allowance transaction if missing.
-async function ensureMonthlyAllowance(user, start, end) {
-  const allowance = Number(user.monthlyAllowance || 0);
-
-  if (!Number.isFinite(allowance) || allowance <= 0) {
-    return;
-  }
-
-  const existing = await Transaction.findOne({
-    user: user._id,
-    type: "income",
-    description: "Monthly allowance",
-    date: { $gte: start, $lt: end },
-  }).select("_id");
-
-  if (existing) return;
-
-  let category = await Category.findOne({
-    name: "Allowance",
-    type: "income",
-  });
-
-  if (!category) {
-    try {
-      category = await Category.create({
-        name: "Allowance",
-        type: "income",
-        icon: "💰",
-        isDefault: true,
-      });
-    } catch (error) {
-      category = await Category.findOne({
-        name: "Allowance",
-        type: "income",
-      });
-
-      if (!category) throw error;
-    }
-  }
-
-  await Transaction.create({
-    user: user._id,
-    type: "income",
-    category: category._id,
-    description: "Monthly allowance",
-    amount: allowance,
-    date: new Date(),
-    source: "manual",
-  });
 }
 
 async function expenseByCategory(userId, start, end) {
@@ -148,9 +96,7 @@ async function currentMonthBudgetStatus(
     isActive: true,
   }).populate("category", "name");
 
-  const result = [];
-
-  for (const budget of budgets) {
+  return Promise.all(budgets.map(async (budget) => {
     const categoryId =
       budget.category?._id || budget.category;
 
@@ -179,7 +125,7 @@ async function currentMonthBudgetStatus(
       ? Math.round((used / budget.limitAmount) * 100)
       : 0;
 
-    result.push({
+    return {
       category: name,
       limit: budget.limitAmount,
       used,
@@ -190,18 +136,15 @@ async function currentMonthBudgetStatus(
       name,
       spent: used,
       month: budget.month,
-    });
-  }
-
-  return result;
+    };
+  }));
 }
 
-// Calculate this month's income, expenses, and balance.
-// If no allowance transaction exists, use the saved profile allowance.
 async function getMonthlyTotals(user, start, end) {
   const userId = user._id;
 
-  const totals = await Transaction.aggregate([
+  const [totals, allowanceTransaction] = await Promise.all([
+    Transaction.aggregate([
     {
       $match: {
         user: userId,
@@ -215,6 +158,14 @@ async function getMonthlyTotals(user, start, end) {
         total: { $sum: "$amount" },
       },
     },
+    ]),
+    Transaction.findOne({
+      user: userId,
+      type: "income",
+      description: /^monthly allowance$/i,
+      deletedAt: null,
+      date: { $gte: start, $lt: end },
+    }).select("_id"),
   ]);
 
   let income =
@@ -222,14 +173,6 @@ async function getMonthlyTotals(user, start, end) {
 
   const expense =
     totals.find((item) => item._id === "expense")?.total || 0;
-
-  const allowanceTransaction = await Transaction.findOne({
-    user: userId,
-    type: "income",
-    description: "Monthly allowance",
-    deletedAt: null,
-    date: { $gte: start, $lt: end },
-  }).select("_id");
 
   if (!allowanceTransaction) {
     income += Number(user.monthlyAllowance || 0);
@@ -254,71 +197,74 @@ exports.getDashboard = async (req, res, next) => {
     }
 
     const userId = user._id;
-
-    try {
-      await processDueRecurringForUser(userId);
-    } catch (error) {
-      console.error(
-        "Recurring processing error:",
-        error.message
-      );
-    }
-
     const month = currentMonth();
     const { start, end } = monthRange(month);
 
-    try {
-      await ensureMonthlyAllowance(user, start, end);
-    } catch (error) {
-      console.error(
-        "Failed to create monthly allowance transaction:",
-        error.message
-      );
+    const maintenance = await Promise.allSettled([
+      processDueRecurringForUser(userId),
+      ensureMonthlyAllowance(user, start, end),
+    ]);
+    if (maintenance[0].status === "rejected") {
+      console.error("Recurring processing error:", maintenance[0].reason.message);
+    }
+    if (maintenance[1].status === "rejected") {
+      console.error("Failed to create monthly allowance transaction:", maintenance[1].reason.message);
     }
 
-    const { income, expense, balance } =
-      await getMonthlyTotals(user, start, end);
-
-    const topCategory = await Transaction.aggregate([
-      {
-        $match: {
-          user: userId,
-          type: "expense",
-          deletedAt: null,
-          date: { $gte: start, $lt: end },
+    const [
+      totals,
+      topCategory,
+      breakdownRows,
+      budgets,
+      insight,
+      tips,
+      unread,
+    ] = await Promise.all([
+      getMonthlyTotals(user, start, end),
+      Transaction.aggregate([
+        {
+          $match: {
+            user: userId,
+            type: "expense",
+            deletedAt: null,
+            date: { $gte: start, $lt: end },
+          },
         },
-      },
-      {
-        $group: {
-          _id: "$category",
-          total: { $sum: "$amount" },
+        {
+          $group: {
+            _id: "$category",
+            total: { $sum: "$amount" },
+          },
         },
-      },
-      { $sort: { total: -1 } },
-      { $limit: 1 },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "_id",
-          foreignField: "_id",
-          as: "cat",
+        { $sort: { total: -1 } },
+        { $limit: 1 },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "_id",
+            foreignField: "_id",
+            as: "cat",
+          },
         },
-      },
-      { $unwind: "$cat" },
-      {
-        $project: {
-          _id: 0,
-          category: "$cat.name",
-          total: 1,
+        { $unwind: "$cat" },
+        {
+          $project: {
+            _id: 0,
+            category: "$cat.name",
+            total: 1,
+          },
         },
-      },
+      ]),
+      expenseByCategory(userId, start, end),
+      currentMonthBudgetStatus(userId, month, start, end),
+      Insight.findOne({ user: userId, month }),
+      SavingTip.find({ user: userId, isDismissed: false })
+        .sort(TIP_SORT)
+        .limit(3),
+      Notification.countDocuments({ user: userId, isRead: false }),
     ]);
 
-    const breakdownRows = await expenseByCategory(
-      userId,
-      start,
-      end
-    );
+    const { income, expense, balance } = totals;
 
     const spendingBreakdown = breakdownRows.map(
       (row, index) => ({
@@ -331,50 +277,6 @@ exports.getDashboard = async (req, res, next) => {
           SPENDING_COLORS[index % SPENDING_COLORS.length],
       })
     );
-
-    const budgets = await currentMonthBudgetStatus(
-      userId,
-      month,
-      start,
-      end
-    );
-
-    let insight = await Insight.findOne({
-      user: userId,
-      month,
-    });
-
-    if (!insight) {
-      try {
-        const { generateInsightForUser } = require("../services/insight.service");
-        insight = await generateInsightForUser(userId, { month });
-      } catch (err) {
-        console.warn("Auto-generate dashboard insight failed:", err.message);
-      }
-    }
-
-    let tips = await SavingTip.find({
-      user: userId,
-      isDismissed: false,
-    })
-      .sort(TIP_SORT)
-      .limit(3);
-
-    // If still no tips, populate default tips
-    if (tips.length === 0) {
-      try {
-        const { generateTipsForUser } = require("../services/tip.service");
-        tips = await generateTipsForUser(userId);
-        tips = (tips || []).slice(0, 3);
-      } catch (err) {
-        console.warn("Auto-generate tips failed:", err.message);
-      }
-    }
-
-    const unread = await Notification.countDocuments({
-      user: userId,
-      isRead: false,
-    });
 
     return res.json({
       success: true,

@@ -1,5 +1,6 @@
 const Transaction = require("../models/Transaction");
 const User = require("../models/User");
+const { ensureMonthlyAllowance } = require("../services/allowance.service");
 const { sendReportEmail } = require("../utils/email");
 const {
   currentMonth,
@@ -12,7 +13,7 @@ const {
 } = require("../utils/validation");
 
 const TYPES = ["income", "expense"];
-const SOURCES = ["manual", "csv", "ai", "recurring"];
+const SOURCES = ["manual", "csv", "ai", "recurring", "allowance"];
 
 const invalid = (res, message) =>
   res.status(400).json({ success: false, message });
@@ -41,6 +42,9 @@ function resolveDateFilter(from, to) {
   if (to !== undefined && to !== "") {
     const parsed = parseDate(to);
     if (!parsed) return { error: "Invalid 'to' date" };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      parsed.setUTCHours(23, 59, 59, 999);
+    }
     filter.$lte = parsed;
     hasDate = true;
   }
@@ -90,8 +94,6 @@ exports.categoryWise = async (req, res, next) => {
 
 exports.incomeVsExpense = async (req, res, next) => {
   try {
-    // Last six calendar months, including months with no transactions (zeros)
-    // so the chart always shows a complete trend (SRS: last six months).
     const months = [];
     const today = new Date();
     for (let i = 5; i >= 0; i -= 1) {
@@ -102,6 +104,12 @@ exports.incomeVsExpense = async (req, res, next) => {
     }
 
     const start = new Date(`${months[0]}-01T00:00:00.000Z`);
+    const user = await User.findById(req.user.id).select("monthlyAllowance");
+    if (user) {
+      const currentMonth = months[months.length - 1];
+      const { start: currentStart, end: currentEnd } = monthRange(currentMonth);
+      await ensureMonthlyAllowance(user, currentStart, currentEnd);
+    }
 
     const raw = await Transaction.aggregate([
       { $match: { user: req.user._id, deletedAt: null, date: { $gte: start } } },
@@ -213,7 +221,6 @@ exports.filteredReport = async (req, res, next) => {
       filter.type = type;
     }
 
-    // "Income source" / record origin filter.
     if (source) {
       if (!SOURCES.includes(source)) {
         return invalid(res, `Source must be one of: ${SOURCES.join(", ")}`);
@@ -224,6 +231,21 @@ exports.filteredReport = async (req, res, next) => {
     if (search) {
       if (typeof search !== "string") return invalid(res, "Invalid search term");
       filter.description = { $regex: escapeRegex(search.trim()), $options: "i" };
+    }
+
+    if (!category && !source) {
+      const user = await User.findById(req.user.id).select("monthlyAllowance");
+      if (user) {
+        const { start, end } = monthRange(currentMonth());
+        const requestedStart = filter.date?.$gte;
+        const requestedEnd = filter.date?.$lte;
+        const includesCurrentMonth =
+          (!requestedStart || requestedStart < end) &&
+          (!requestedEnd || requestedEnd >= start);
+        if (includesCurrentMonth) {
+          await ensureMonthlyAllowance(user, start, end);
+        }
+      }
     }
 
     const txns = await Transaction.find(filter)
@@ -248,9 +270,6 @@ exports.filteredReport = async (req, res, next) => {
   }
 };
 
-// The report PDF/image is generated client-side (html2canvas + jsPDF in the
-// React app), which keeps the API free of heavy native dependencies. These
-// endpoints are intentionally not implemented server-side.
 exports.exportPDF = async (req, res) => {
   res.status(501).json({
     success: false,
@@ -285,6 +304,9 @@ exports.shareByEmail = async (req, res, next) => {
       ? parseDate(from)
       : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const end = to ? parseDate(to) : new Date();
+    if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      end.setUTCHours(23, 59, 59, 999);
+    }
 
     if (!start) return invalid(res, "Invalid 'from' date");
     if (!end) return invalid(res, "Invalid 'to' date");

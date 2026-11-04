@@ -7,8 +7,8 @@ router.get("/", protect, txnController.getAllTransactions);
 router.get("/recent", protect, txnController.getRecentTransactions);
 router.get("/summary/monthly", protect, txnController.getMonthlySummary);
 router.get("/savings-balance", protect, txnController.getSavingsBalance);
-// Soft-deleted history (must be declared before "/:id" to avoid shadowing).
 router.get("/deleted", protect, txnController.getDeletedTransactions);
+router.delete("/deleted/permanent", protect, txnController.permanentlyDeleteAllDeleted);
 router.post("/bulk-delete", protect, txnController.bulkDelete);
 router.post("/:id/restore", protect, txnController.restoreTransaction);
 router.get("/:id", protect, txnController.getTransaction);

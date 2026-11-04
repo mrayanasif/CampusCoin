@@ -39,7 +39,6 @@ function Sidebar({ isOpen, closeSidebar }) {
     try {
       await API.post("/auth/logout");
     } catch {
-      // Clear the local session even when the API is unavailable.
     }
     localStorage.removeItem("token");
     localStorage.removeItem("user");

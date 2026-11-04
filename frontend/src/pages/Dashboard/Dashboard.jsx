@@ -9,7 +9,6 @@ import {
   Sparkles,
   TrendingUp,
   Wallet,
-  X,
 } from "lucide-react";
 import {
   Area,
@@ -67,210 +66,309 @@ const COLORS = [
   "#FB7185",
 ];
 
+const DASHBOARD_CACHE_TTL = 60_000;
+
+function getDashboardCacheKey(user) {
+  const identity = user?._id || user?.id || user?.email;
+  return identity ? `campuscoin:dashboard:${identity}` : null;
+}
+
+function readDashboardCache(cacheKey) {
+  if (!cacheKey) return null;
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
+    if (!cached || Date.now() - cached.updatedAt > DASHBOARD_CACHE_TTL) return null;
+    return cached.snapshot || null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeBudgetRows(rows = []) {
+  return rows.map((budget) => ({
+    id: budget._id || budget.category || budget.categoryName,
+    name: displayCategoryName(budget.categoryName || budget.category?.name || budget.name || "Category"),
+    spent: Number(budget.spent ?? budget.used ?? 0),
+    limit: Number(budget.limit ?? budget.limitAmount ?? 0),
+    percent:
+      budget.percentage ??
+      (Number(budget.limit ?? budget.limitAmount ?? 0) > 0
+        ? Math.round(
+            (Number(budget.spent ?? budget.used ?? 0) /
+              Number(budget.limit ?? budget.limitAmount ?? 1)) *
+              100
+          )
+        : 0),
+  }));
+}
+
+function normalizeSpendingRows(rows = []) {
+  return rows.map((row, index) => ({
+    name: row.name || row.category || "Category",
+    value: Number(row.value ?? row.total ?? 0),
+    color: row.color || COLORS[index % COLORS.length],
+  }));
+}
+
+function normalizeTrend(responseData, dashboardData) {
+  const rawItems = responseData?.data || [];
+  const map = {};
+  (responseData?.months || []).forEach((month) => {
+    map[month] = { monthKey: month, income: 0, expense: 0 };
+  });
+  rawItems.forEach((item) => {
+    const month = item._id?.month;
+    const type = item._id?.type;
+    if (!month || !type) return;
+    if (!map[month]) map[month] = { monthKey: month, income: 0, expense: 0 };
+    map[month][type] = Number(item.total || 0);
+  });
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const trend = Object.keys(map).sort().map((key) => {
+    const item = map[key];
+    const monthNumber = Number.parseInt(key.split("-")[1], 10);
+    const income = item.income || 0;
+    const expense = item.expense || 0;
+    return {
+      rawMonth: key,
+      month: monthNames[monthNumber - 1] || key,
+      income,
+      expense,
+      savings: income - expense,
+    };
+  });
+
+  const currentMonthKey = dashboardData?.month || new Date().toISOString().slice(0, 7);
+  const currentEntry = trend.find((entry) => entry.rawMonth === currentMonthKey);
+  if (currentEntry && dashboardData?.balance) {
+    if (typeof dashboardData.balance.income === "number") currentEntry.income = dashboardData.balance.income;
+    if (typeof dashboardData.balance.expense === "number") currentEntry.expense = dashboardData.balance.expense;
+    currentEntry.savings = currentEntry.income - currentEntry.expense;
+  }
+  return trend;
+}
+
+function CustomSavingsTooltip({ active, payload, currency, savingsGoal }) {
+  if (!active || !payload?.length) return null;
+  const item = payload[0].payload;
+  const isPositive = item.savings >= 0;
+  return (
+    <div className="savings-tooltip">
+      <p className="tooltip-month">{item.month} ({item.rawMonth})</p>
+      <div className="tooltip-row">
+        <span>Net Savings:</span>
+        <strong style={{ color: isPositive ? "#16a34a" : "#dc2626" }}>
+          {formatCurrency(item.savings, currency)}
+        </strong>
+      </div>
+      <div className="tooltip-row sub">
+        <span>Income:</span>
+        <span style={{ color: "#16a34a" }}>{formatCurrency(item.income, currency)}</span>
+      </div>
+      <div className="tooltip-row sub">
+        <span>Expenses:</span>
+        <span style={{ color: "#dc2626" }}>{formatCurrency(item.expense, currency)}</span>
+      </div>
+      {savingsGoal > 0 && (
+        <div className="tooltip-row sub">
+          <span>Goal Target:</span>
+          <span style={{ color: "#d97706" }}>{formatCurrency(savingsGoal, currency)}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CustomBudgetTooltip({ active, payload, label, currency }) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0]?.payload || {};
+  const limit = Number(data.limit || 0);
+  const spent = Number(data.spent || 0);
+  const isOver = spent > limit;
+  const diff = Math.abs(limit - spent);
+  return (
+    <div className="budget-custom-tooltip">
+      <div className="tooltip-cat-name">{label || data.name}</div>
+      <div className="tooltip-data-row">
+        <span className="tooltip-indicator budget-ind" />
+        <span>Budget Limit:</span>
+        <strong>{formatCurrency(limit, currency)}</strong>
+      </div>
+      <div className="tooltip-data-row">
+        <span className="tooltip-indicator actual-ind" />
+        <span>Actual Spent:</span>
+        <strong style={{ color: isOver ? "#ef4444" : "#16a34a" }}>
+          {formatCurrency(spent, currency)}
+        </strong>
+      </div>
+      <div className="tooltip-status-badge">
+        {isOver ? (
+          <span className="badge-over">⚠️ Exceeded by {formatCurrency(diff, currency)} ({data.percent}%)</span>
+        ) : (
+          <span className="badge-under">✓ Under budget ({formatCurrency(diff, currency)} remaining)</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Dashboard() {
   const { currency } = useCurrency();
   const navigate = useNavigate();
   const [user] = useState(readStoredUser);
-  const [dashboardData, setDashboardData] = useState(null);
-  const [budgets, setBudgets] = useState([]);
-  const [spending, setSpending] = useState([]);
-  const [tips, setTips] = useState([]);
+  const [cacheKey] = useState(() => getDashboardCacheKey(user));
+  const [initialCache] = useState(() => readDashboardCache(cacheKey));
+  const [dashboardData, setDashboardData] = useState(initialCache?.dashboardData || null);
+  const [budgets, setBudgets] = useState(initialCache?.budgets || []);
+  const [spending, setSpending] = useState(initialCache?.spending || []);
+  const [tips, setTips] = useState(initialCache?.tips || []);
   const [activity, setActivity] = useState(null);
-  const [savingsTrend, setSavingsTrend] = useState([]);
+  const [savingsTrend, setSavingsTrend] = useState(initialCache?.savingsTrend || []);
   const [chartType, setChartType] = useState("area");
   const [budgetViewMode, setBudgetViewMode] = useState("line");
-  const [currentInsight, setCurrentInsight] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [currentInsight, setCurrentInsight] = useState(initialCache?.currentInsight || null);
+  const [loading, setLoading] = useState(!initialCache?.dashboardData);
 
   useEffect(() => {
     let ignore = false;
+    let activityTaskId = null;
+    let activityUsesIdleCallback = false;
+
+    const persistDashboard = (patch) => {
+      if (!cacheKey) return;
+      try {
+        const previous = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
+        sessionStorage.setItem(
+          cacheKey,
+          JSON.stringify({
+            updatedAt: Date.now(),
+            snapshot: { ...(previous?.snapshot || initialCache || {}), ...patch },
+          })
+        );
+      } catch {
+      }
+    };
+
+    const loadTrend = async (data) => {
+      try {
+        const response = await API.get("/reports/income-expense");
+        if (ignore) return;
+        const trend = normalizeTrend(response.data, data);
+        setSavingsTrend(trend);
+        persistDashboard({ savingsTrend: trend });
+      } catch (error) {
+        console.warn("Could not load dashboard savings trend:", error.message);
+      }
+    };
+
+    const loadActivity = async () => {
+      const endpoints = [
+        ["recentViews", "/activity/recent-views"],
+        ["recentEdits", "/activity/recent-edits"],
+        ["duplicates", "/activity/duplicates"],
+        ["unusual", "/activity/unusual"],
+        ["forecast", "/activity/forecast"],
+      ];
+      const results = await Promise.allSettled(endpoints.map(([, url]) => API.get(url)));
+      if (ignore) return;
+
+      const data = {};
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") data[endpoints[index][0]] = result.value.data || {};
+      });
+      const hasActivity =
+        (data.recentViews?.transactions || []).length > 0 ||
+        (data.recentEdits?.transactions || []).length > 0 ||
+        (data.duplicates?.duplicates || []).length > 0 ||
+        (data.unusual?.unusual || []).length > 0 ||
+        typeof data.forecast?.forecast === "number";
+      setActivity(hasActivity ? data : null);
+    };
 
     const loadDashboard = async () => {
       try {
-        setLoading(true);
         const response = await API.get("/dashboard");
         const data = response.data || {};
-
-        // The dashboard aggregate is the primary source. Some deployments only
-        // return the core balance payload, so fall back to the dedicated
-        // widgets/endpoints for budgets, spending breakdown and top tips.
-        const budgetFallback =
-          Array.isArray(data.budgets) && data.budgets.length > 0
-            ? null
-            : API.get("/dashboard/budget-vs-actual");
-        const spendingFallback =
-          Array.isArray(data.spendingBreakdown) && data.spendingBreakdown.length > 0
-            ? null
-            : API.get("/reports/category-wise");
-        const tipsFallback =
-          Array.isArray(data.tips) && data.tips.length > 0
-            ? null
-            : API.get("/saving-tips/top");
-        const trendFallback = API.get("/reports/income-expense");
-
-        const [budgetRes, spendingRes, tipsRes, trendRes] = await Promise.allSettled([
-          budgetFallback,
-          spendingFallback,
-          tipsFallback,
-          trendFallback,
-        ]);
         if (ignore) return;
 
-        if (!ignore) {
-          setDashboardData(data);
-          if (data.insight) {
-            setCurrentInsight(data.insight);
-          } else {
-            API.get("/insights/current")
-              .then((res) => {
-                if (!ignore && res.data?.insight) setCurrentInsight(res.data.insight);
-              })
-              .catch(() => { });
-          }
-        }
+        const normalizedBudgets = normalizeBudgetRows(Array.isArray(data.budgets) ? data.budgets : []);
+        const normalizedSpending = normalizeSpendingRows(Array.isArray(data.spendingBreakdown) ? data.spendingBreakdown : []);
+        const normalizedTips = Array.isArray(data.tips) ? data.tips.slice(0, 3) : [];
 
-        const budgetRows =
-          Array.isArray(data.budgets) && data.budgets.length > 0
-            ? data.budgets
-            : budgetRes.status === "fulfilled"
-              ? budgetRes.value?.data?.data || []
-              : [];
-        setBudgets(
-          budgetRows.map((b) => ({
-            id: b._id || b.category || b.categoryName,
-            name: displayCategoryName(b.categoryName || b.category?.name || b.name || "Category"),
-            spent: Number(b.spent ?? b.used ?? 0),
-            limit: Number(b.limit ?? b.limitAmount ?? 0),
-            percent:
-              b.percentage ??
-              (Number(b.limit ?? b.limitAmount ?? 0) > 0
-                ? Math.round(
-                  (Number(b.spent ?? b.used ?? 0) /
-                    Number(b.limit ?? b.limitAmount ?? 1)) *
-                  100
-                )
-                : 0),
-          }))
-        );
-
-        const spendingRows =
-          Array.isArray(data.spendingBreakdown) &&
-            data.spendingBreakdown.length > 0
-            ? data.spendingBreakdown
-            : spendingRes.status === "fulfilled"
-              ? (spendingRes.value?.data?.data || []).map((row) => ({
-                name: row.category,
-                value: row.total,
-              }))
-              : [];
-        setSpending(
-          spendingRows.map((row, index) => ({
-            name: row.name,
-            value: Number(row.value ?? row.total ?? 0),
-            color: row.color || COLORS[index % COLORS.length],
-          }))
-        );
-
-        let tipRows =
-          Array.isArray(data.tips) && data.tips.length > 0
-            ? data.tips
-            : tipsRes.status === "fulfilled"
-              ? tipsRes.value?.data?.tips || []
-              : [];
-
-        // /saving-tips/top never generates tips itself; if there are none yet
-        // ask the tips engine (GET /saving-tips generates on first read).
-        if (tipRows.length === 0) {
-          try {
-            const generated = await API.get("/saving-tips");
-            if (!ignore) tipRows = generated.data?.tips || [];
-          } catch (err) {
-            console.error("Failed to generate saving tips:", err);
-          }
-        }
-        if (!ignore) setTips(tipRows.slice(0, 3));
-
-        if (trendRes.status === "fulfilled") {
-          const rawItems = trendRes.value?.data?.data || [];
-          const monthsList = trendRes.value?.data?.months || [];
-          const map = {};
-          monthsList.forEach((m) => {
-            map[m] = { monthKey: m, income: 0, expense: 0 };
-          });
-          rawItems.forEach((item) => {
-            const m = item._id?.month;
-            const t = item._id?.type;
-            if (m && t) {
-              if (!map[m]) map[m] = { monthKey: m, income: 0, expense: 0 };
-              map[m][t] = Number(item.total || 0);
-            }
-          });
-
-          const monthNames = [
-            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-          ];
-
-          const formattedTrend = Object.keys(map)
-            .sort()
-            .map((key) => {
-              const item = map[key];
-              const parts = key.split("-");
-              const mo = parseInt(parts[1], 10);
-              const label = monthNames[mo - 1] || key;
-              const inc = item.income || 0;
-              const exp = item.expense || 0;
-              const net = inc - exp;
-              return {
-                rawMonth: key,
-                month: label,
-                income: inc,
-                expense: exp,
-                savings: net,
-              };
-            });
-
-          const currentMonthKey = data.month || new Date().toISOString().slice(0, 7);
-          const currentEntry = formattedTrend.find((e) => e.rawMonth === currentMonthKey);
-          if (currentEntry && data.balance) {
-            if (typeof data.balance.income === "number") currentEntry.income = data.balance.income;
-            if (typeof data.balance.expense === "number") currentEntry.expense = data.balance.expense;
-            currentEntry.savings = currentEntry.income - currentEntry.expense;
-          }
-
-          if (!ignore) setSavingsTrend(formattedTrend);
-        }
-
-        // Optional system intelligence (SRS "Optional System Intelligence").
-        // These endpoints are additive: if the backend does not expose them we
-        // simply keep the panel hidden instead of showing errors.
-        const activityEndpoints = [
-          ["recentViews", "/activity/recent-views"],
-          ["recentEdits", "/activity/recent-edits"],
-          ["duplicates", "/activity/duplicates"],
-          ["unusual", "/activity/unusual"],
-          ["forecast", "/activity/forecast"],
-        ];
-        const activityResults = await Promise.allSettled(
-          activityEndpoints.map(([, url]) => API.get(url))
-        );
-        if (ignore) return;
-
-        const activityData = {};
-        activityResults.forEach((result, index) => {
-          const key = activityEndpoints[index][0];
-          if (result.status === "fulfilled") {
-            activityData[key] = result.value.data || {};
-          }
+        setDashboardData(data);
+        setBudgets(normalizedBudgets);
+        setSpending(normalizedSpending);
+        setTips(normalizedTips);
+        if (data.insight) setCurrentInsight(data.insight);
+        persistDashboard({
+          dashboardData: data,
+          budgets: normalizedBudgets,
+          spending: normalizedSpending,
+          tips: normalizedTips,
+          currentInsight: data.insight || null,
         });
+        setLoading(false);
 
-        const hasActivity =
-          (activityData.recentViews?.transactions || []).length > 0 ||
-          (activityData.recentEdits?.transactions || []).length > 0 ||
-          (activityData.duplicates?.duplicates || []).length > 0 ||
-          (activityData.unusual?.unusual || []).length > 0 ||
-          typeof activityData.forecast?.forecast === "number";
-        if (!ignore) setActivity(hasActivity ? activityData : null);
+        void loadTrend(data);
+
+        if (!Array.isArray(data.budgets)) {
+          API.get("/dashboard/budget-vs-actual")
+            .then((res) => {
+              if (ignore) return;
+              const rows = normalizeBudgetRows(res.data?.data || []);
+              setBudgets(rows);
+              persistDashboard({ budgets: rows });
+            })
+            .catch(() => {});
+        }
+
+        if (!Array.isArray(data.spendingBreakdown)) {
+          API.get("/reports/category-wise")
+            .then((res) => {
+              if (ignore) return;
+              const rows = normalizeSpendingRows(
+                (res.data?.data || []).map((row) => ({ name: row.category, value: row.total }))
+              );
+              setSpending(rows);
+              persistDashboard({ spending: rows });
+            })
+            .catch(() => {});
+        }
+
+        if (!Array.isArray(data.tips)) {
+          API.get("/saving-tips/top")
+            .then(async (res) => {
+              let rows = res.data?.tips || [];
+              if (rows.length === 0) {
+                const generated = await API.get("/saving-tips");
+                rows = generated.data?.tips || [];
+              }
+              if (ignore) return;
+              rows = rows.slice(0, 3);
+              setTips(rows);
+              persistDashboard({ tips: rows });
+            })
+            .catch((error) => console.warn("Could not load dashboard tips:", error.message));
+        }
+
+        if (!data.insight) {
+          API.get("/insights/current")
+            .then((res) => {
+              if (ignore || !res.data?.insight) return;
+              setCurrentInsight(res.data.insight);
+              persistDashboard({ currentInsight: res.data.insight });
+            })
+            .catch(() => {});
+        }
+
+        const runActivity = () => { void loadActivity(); };
+        if (typeof window.requestIdleCallback === "function") {
+          activityUsesIdleCallback = true;
+          activityTaskId = window.requestIdleCallback(runActivity, { timeout: 1800 });
+        } else {
+          activityTaskId = window.setTimeout(runActivity, 900);
+        }
       } catch (error) {
         if (ignore) return;
         if (error.response?.status === 401) {
@@ -292,8 +390,12 @@ function Dashboard() {
 
     return () => {
       ignore = true;
+      if (activityTaskId !== null) {
+        if (activityUsesIdleCallback) window.cancelIdleCallback?.(activityTaskId);
+        else window.clearTimeout(activityTaskId);
+      }
     };
-  }, [navigate]);
+  }, [navigate, cacheKey, initialCache]);
 
   useEffect(() => {
     const handleUserUpdate = () => {
@@ -334,89 +436,6 @@ function Dashboard() {
     return dataMax / (dataMax - dataMin);
   };
   const off = getGradientOffset();
-
-  const CustomSavingsTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const item = payload[0].payload;
-      const isPositive = item.savings >= 0;
-      return (
-        <div className="savings-tooltip">
-          <p className="tooltip-month">{item.month} ({item.rawMonth})</p>
-          <div className="tooltip-row">
-            <span>Net Savings:</span>
-            <strong style={{ color: isPositive ? "#16a34a" : "#dc2626" }}>
-              {formatCurrency(item.savings, currency)}
-            </strong>
-          </div>
-          <div className="tooltip-row sub">
-            <span>Income:</span>
-            <span style={{ color: "#16a34a" }}>{formatCurrency(item.income, currency)}</span>
-          </div>
-          <div className="tooltip-row sub">
-            <span>Expenses:</span>
-            <span style={{ color: "#dc2626" }}>{formatCurrency(item.expense, currency)}</span>
-          </div>
-          {savingsGoal > 0 && (
-            <div className="tooltip-row sub">
-              <span>Goal Target:</span>
-              <span style={{ color: "#d97706" }}>{formatCurrency(savingsGoal, currency)}</span>
-            </div>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const CustomBudgetTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0]?.payload || {};
-      const limit = Number(data.limit || 0);
-      const spent = Number(data.spent || 0);
-      const isOver = spent > limit;
-      const diff = Math.abs(limit - spent);
-
-      return (
-        <div className="budget-custom-tooltip">
-          <div className="tooltip-cat-name">{label || data.name}</div>
-          <div className="tooltip-data-row">
-            <span className="tooltip-indicator budget-ind" />
-            <span>Budget Limit:</span>
-            <strong>{formatCurrency(limit, currency)}</strong>
-          </div>
-          <div className="tooltip-data-row">
-            <span className="tooltip-indicator actual-ind" />
-            <span>Actual Spent:</span>
-            <strong style={{ color: isOver ? "#ef4444" : "#16a34a" }}>
-              {formatCurrency(spent, currency)}
-            </strong>
-          </div>
-          <div className="tooltip-status-badge">
-            {isOver ? (
-              <span className="badge-over">
-                ⚠️ Exceeded by {formatCurrency(diff, currency)} ({data.percent}%)
-              </span>
-            ) : (
-              <span className="badge-under">
-                ✓ Under budget ({formatCurrency(diff, currency)} remaining)
-              </span>
-            )}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const dismissTip = async (id) => {
-    try {
-      await API.put(`/saving-tips/${id}/dismiss`);
-      setTips((curr) => curr.filter((tip) => tip._id !== id));
-      toast.success("Tip dismissed");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Dismiss failed");
-    }
-  };
 
   if (loading) {
     return (
@@ -524,7 +543,6 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Monthly Savings Trend Chart */}
       <section className="dashboard-panel savings-panel">
         <div className="panel-heading">
           <div>
@@ -607,7 +625,7 @@ function Dashboard() {
                   fontSize={11}
                   tickFormatter={(val) => formatCurrency(val, currency)}
                 />
-                <Tooltip content={<CustomSavingsTooltip />} />
+                <Tooltip content={<CustomSavingsTooltip currency={currency} savingsGoal={savingsGoal} />} />
                 {savingsGoal > 0 && (
                   <ReferenceLine
                     y={savingsGoal}
@@ -648,7 +666,7 @@ function Dashboard() {
                   fontSize={11}
                   tickFormatter={(val) => formatCurrency(val, currency)}
                 />
-                <Tooltip content={<CustomSavingsTooltip />} />
+                <Tooltip content={<CustomSavingsTooltip currency={currency} savingsGoal={savingsGoal} />} />
                 {savingsGoal > 0 && (
                   <ReferenceLine
                     y={savingsGoal}
@@ -727,7 +745,7 @@ function Dashboard() {
                     fontSize={11}
                     tickFormatter={(val) => formatCurrency(val, currency)}
                   />
-                  <Tooltip content={<CustomBudgetTooltip />} />
+                  <Tooltip content={<CustomBudgetTooltip currency={currency} />} />
                   <Legend
                     verticalAlign="top"
                     align="right"
@@ -864,7 +882,97 @@ function Dashboard() {
         </section>
       </div>
 
-      {/* AI Insights and Top Saving Tips Synchronized Section */}
+
+      {activity && (
+        <section className="smart-activity">
+          <div className="smart-activity-head">
+            <div>
+              <h3>Smart activity</h3>
+              <p>Optional system intelligence based on your recent history.</p>
+            </div>
+            <Sparkles size={18} />
+          </div>
+
+          <div className="smart-activity-grid">
+            <div className="smart-block">
+              <h4>Recently viewed</h4>
+              {(activity.recentViews?.transactions || []).length === 0 ? (
+                <p className="smart-empty">No recent views yet.</p>
+              ) : (
+                <ul>
+                  {activity.recentViews.transactions.slice(0, 3).map((txn) => (
+                    <li key={txn._id}>
+                      <span>
+                        {new Date(txn.date).toLocaleDateString()} ·{" "}
+                        {displayCategoryName(txn.category?.name || "Uncategorized")}
+                      </span>
+                      <strong>{formatCurrency(txn.amount, currency)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="smart-block">
+              <h4>Recently edited</h4>
+              {(activity.recentEdits?.transactions || []).length === 0 ? (
+                <p className="smart-empty">No recent edits yet.</p>
+              ) : (
+                <ul>
+                  {activity.recentEdits.transactions.slice(0, 3).map((txn) => (
+                    <li key={txn._id}>
+                      <span>
+                        {new Date(txn.date).toLocaleDateString()} ·{" "}
+                        {displayCategoryName(txn.category?.name || "Uncategorized")}
+                      </span>
+                      <strong>{formatCurrency(txn.amount, currency)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="smart-block">
+              <h4>Smart flags</h4>
+              <ul>
+                <li>
+                  <span>Possible duplicate groups</span>
+                  <strong>{(activity.duplicates?.duplicates || []).length}</strong>
+                </li>
+                <li>
+                  <span>Unusually large expenses</span>
+                  <strong>{(activity.unusual?.unusual || []).length}</strong>
+                </li>
+              </ul>
+              {(activity.unusual?.unusual || []).slice(0, 1).map((txn) => (
+                <p className="smart-flag" key={txn._id}>
+                  {formatCurrency(txn.amount, currency)} on{" "}
+                  {new Date(txn.date).toLocaleDateString()} is well above your
+                  average expense.
+                </p>
+              ))}
+            </div>
+
+            <div className="smart-block">
+              <h4>Next month forecast</h4>
+              {typeof activity.forecast?.forecast === "number" ? (
+                <>
+                  <strong className="smart-forecast">
+                    {formatCurrency(activity.forecast.forecast, currency)}
+                  </strong>
+                  <p className="smart-empty">
+                    Based on {activity.forecast.basedOnMonths || 0} month(s) of
+                    expense history.
+                  </p>
+                </>
+              ) : (
+                <p className="smart-empty">Not enough history to forecast.</p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       <div className="dashboard-synced-grid">
         {/* AI Insight Card */}
         <section className="dashboard-ai-card" aria-label="AI Spending Insight">
@@ -956,106 +1064,6 @@ function Dashboard() {
           </div>
         </section>
       </div>
-
-      <div className="dashboard-bottom">
-        <div className="top-category">
-          <span>This Month's Top Category</span>
-          <strong>{topCategory?.category || "No data"}</strong>
-          <p>
-            {formatCurrency(topCategory?.total || 0, currency)} spent this month
-          </p>
-        </div>
-      </div>
-
-      {activity && (
-        <section className="smart-activity">
-          <div className="smart-activity-head">
-            <div>
-              <h3>Smart activity</h3>
-              <p>Optional system intelligence based on your recent history.</p>
-            </div>
-            <Sparkles size={18} />
-          </div>
-
-          <div className="smart-activity-grid">
-            <div className="smart-block">
-              <h4>Recently viewed</h4>
-              {(activity.recentViews?.transactions || []).length === 0 ? (
-                <p className="smart-empty">No recent views yet.</p>
-              ) : (
-                <ul>
-                  {activity.recentViews.transactions.slice(0, 3).map((txn) => (
-                    <li key={txn._id}>
-                      <span>
-                        {new Date(txn.date).toLocaleDateString()} ·{" "}
-                        {displayCategoryName(txn.category?.name || "Uncategorized")}
-                      </span>
-                      <strong>{formatCurrency(txn.amount, currency)}</strong>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="smart-block">
-              <h4>Recently edited</h4>
-              {(activity.recentEdits?.transactions || []).length === 0 ? (
-                <p className="smart-empty">No recent edits yet.</p>
-              ) : (
-                <ul>
-                  {activity.recentEdits.transactions.slice(0, 3).map((txn) => (
-                    <li key={txn._id}>
-                      <span>
-                        {new Date(txn.date).toLocaleDateString()} ·{" "}
-                        {displayCategoryName(txn.category?.name || "Uncategorized")}
-                      </span>
-                      <strong>{formatCurrency(txn.amount, currency)}</strong>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="smart-block">
-              <h4>Smart flags</h4>
-              <ul>
-                <li>
-                  <span>Possible duplicate groups</span>
-                  <strong>{(activity.duplicates?.duplicates || []).length}</strong>
-                </li>
-                <li>
-                  <span>Unusually large expenses</span>
-                  <strong>{(activity.unusual?.unusual || []).length}</strong>
-                </li>
-              </ul>
-              {(activity.unusual?.unusual || []).slice(0, 1).map((txn) => (
-                <p className="smart-flag" key={txn._id}>
-                  {formatCurrency(txn.amount, currency)} on{" "}
-                  {new Date(txn.date).toLocaleDateString()} is well above your
-                  average expense.
-                </p>
-              ))}
-            </div>
-
-            <div className="smart-block">
-              <h4>Next month forecast</h4>
-              {typeof activity.forecast?.forecast === "number" ? (
-                <>
-                  <strong className="smart-forecast">
-                    {formatCurrency(activity.forecast.forecast, currency)}
-                  </strong>
-                  <p className="smart-empty">
-                    Based on {activity.forecast.basedOnMonths || 0} month(s) of
-                    expense history.
-                  </p>
-                </>
-              ) : (
-                <p className="smart-empty">Not enough history to forecast.</p>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
     </div>
   );
 }

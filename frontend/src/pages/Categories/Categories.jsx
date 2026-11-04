@@ -37,6 +37,8 @@ function Categories() {
   const [categories, setCategories] = useState([]);
   const [type, setType] = useState("expense");
   const [name, setName] = useState("");
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [savingCategory, setSavingCategory] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("expense");
@@ -56,20 +58,21 @@ function Categories() {
   }, []);
 
   useEffect(() => {
-    if (!editingCategory && !categoryToDelete) return undefined;
+    if (!addModalOpen && !editingCategory && !categoryToDelete) return undefined;
     const handleEscape = (event) => {
       if (event.key === "Escape" && !savingEdit && !deleting) {
         setEditingCategory(null);
         setCategoryToDelete(null);
+        setAddModalOpen(false);
       }
     };
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [editingCategory, categoryToDelete, savingEdit, deleting]);
+  }, [addModalOpen, editingCategory, categoryToDelete, savingEdit, deleting]);
 
-  const fetchCategories = async () => {
+  const fetchCategories = async ({ showLoader = categories.length === 0 } = {}) => {
     try {
-      setLoading(true);
+      if (showLoader) setLoading(true);
       const res = await API.get("/categories");
       const loadedCategories = res.data.categories || [];
       const validExpenseIds = loadedCategories
@@ -91,7 +94,7 @@ function Categories() {
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to load categories");
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
@@ -103,14 +106,18 @@ function Categories() {
     if (!type) return toast.error("Please choose a category type");
 
     try {
+      setSavingCategory(true);
       await API.post("/categories", { name: cleanName, type });
       toast.success("Category added");
 
       setName("");
       setType("expense");
-      fetchCategories();
+      setAddModalOpen(false);
+      await fetchCategories();
     } catch (error) {
       toast.error(error.response?.data?.message || "Save failed");
+    } finally {
+      setSavingCategory(false);
     }
   };
 
@@ -204,43 +211,22 @@ function Categories() {
 
   return (
     <div>
-      <div className="page-heading">
+      <div className="page-heading category-page-heading">
         <div>
           <h1>Categories</h1>
           <p>Manage your personal income and expense categories.</p>
         </div>
+        <button
+          type="button"
+          className="category-add-top"
+          onClick={() => setAddModalOpen(true)}
+        >
+          <Plus size={17} />
+          Add Category
+        </button>
       </div>
 
       <div className="category-layout">
-        <section className="category-form-panel">
-          <h2>Add Category</h2>
-
-          <form onSubmit={saveCategory} noValidate>
-            <div className="category-field">
-              <label>Category name</label>
-              <input
-                type="text"
-                value={name}
-                placeholder="e.g. Gym"
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            <div className="category-field">
-              <label>Category type</label>
-              <select value={type} onChange={(e) => setType(e.target.value)}>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-              </select>
-            </div>
-
-            <button className="category-save" type="submit">
-              <Plus size={16} />
-              Add Category
-            </button>
-          </form>
-        </section>
-
         <section className="category-list-panel">
           {loading ? (
             <p style={{ padding: "20px", color: "#888" }}>Loading...</p>
@@ -351,6 +337,78 @@ function Categories() {
           )}
         </section>
       </div>
+
+      {addModalOpen && (
+        <div
+          className="category-modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !savingCategory) {
+              setAddModalOpen(false);
+            }
+          }}
+        >
+          <section
+            className="category-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-category-title"
+          >
+            <div className="category-modal-header">
+              <div>
+                <h2 id="add-category-title">Add Category</h2>
+                <p>Create a personal income or expense category.</p>
+              </div>
+              <button
+                type="button"
+                className="category-modal-close"
+                onClick={() => setAddModalOpen(false)}
+                disabled={savingCategory}
+                aria-label="Close add category dialog"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={saveCategory} noValidate>
+              <div className="category-field">
+                <label htmlFor="new-category-name">Category name</label>
+                <input
+                  id="new-category-name"
+                  type="text"
+                  value={name}
+                  placeholder="e.g. Gym"
+                  autoFocus
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+              <div className="category-field">
+                <label htmlFor="new-category-type">Category type</label>
+                <select
+                  id="new-category-type"
+                  value={type}
+                  onChange={(event) => setType(event.target.value)}
+                >
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
+              </div>
+              <div className="category-modal-actions">
+                <button
+                  type="button"
+                  className="category-modal-cancel"
+                  onClick={() => setAddModalOpen(false)}
+                  disabled={savingCategory}
+                >
+                  Cancel
+                </button>
+                <button className="category-save" type="submit" disabled={savingCategory}>
+                  <Plus size={16} />
+                  {savingCategory ? "Adding..." : "Add Category"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
 
       {editingCategory && (
         <div

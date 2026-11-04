@@ -36,8 +36,13 @@ const savingTipSchema = new mongoose.Schema(
 
     source: {
       type: String,
-      enum: ["system", "ai", "template"],
+      enum: ["system", "ai", "insight", "template"],
       default: "system",
+    },
+
+    insightMonth: {
+      type: String,
+      default: "",
     },
 
     isPinned: {

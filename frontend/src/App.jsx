@@ -1,43 +1,40 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import SessionManager from "./components/SessionManager/SessionManager.jsx";
 
-import Home from "./pages/Home/Home.jsx";
-import Login from "./pages/Auth/Login.jsx";
-import Register from "./pages/Auth/Register.jsx";
-import ForgotPassword from "./pages/Auth/ForgotPassword.jsx";
-import ResetPassword from "./pages/Auth/ResetPassword.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
-import Dashboard from "./pages/Dashboard/Dashboard.jsx";
-import Transactions from "./pages/Transactions/Transactions.jsx";
-import Budgets from "./pages/Budgets/Budgets.jsx";
-import Reports from "./pages/Reports/Reports.jsx";
-import Insights from "./pages/Insights/Insights.jsx";
-import SavingTips from "./pages/SavingTips/SavingTips.jsx";
-import Categories from "./pages/Categories/Categories.jsx";
-import Notes from "./pages/Notes/Notes.jsx";
-import Profile from "./pages/Profile/Profile.jsx";
-import Notifications from "./pages/Notifications/Notifications.jsx";
-
-import AdminLogin from "./pages/admin/AdminLogin/AdminLogin.jsx";
 import AdminLayout from "./pages/admin/AdminLayout.jsx";
-import AdminDashboard from "./pages/admin/AdminDashboard/AdminDashboard.jsx";
-import Users from "./pages/admin/Users/Users.jsx";
-import AdminCategories from "./pages/admin/AdminCategories/AdminCategories.jsx";
-import Templates from "./pages/admin/Templates/Templates.jsx";
-import Statistics from "./pages/admin/Statistics/Statistics.jsx";
-import Announcements from "./pages/admin/Announcements/Announcements.jsx";
-import Settings from "./pages/admin/Settings/Settings.jsx";
+
+const Home = lazy(() => import("./pages/Home/Home.jsx"));
+const Login = lazy(() => import("./pages/Auth/Login.jsx"));
+const Register = lazy(() => import("./pages/Auth/Register.jsx"));
+const ForgotPassword = lazy(() => import("./pages/Auth/ForgotPassword.jsx"));
+const ResetPassword = lazy(() => import("./pages/Auth/ResetPassword.jsx"));
+const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard.jsx"));
+const Transactions = lazy(() => import("./pages/Transactions/Transactions.jsx"));
+const Budgets = lazy(() => import("./pages/Budgets/Budgets.jsx"));
+const Reports = lazy(() => import("./pages/Reports/Reports.jsx"));
+const Insights = lazy(() => import("./pages/Insights/Insights.jsx"));
+const SavingTips = lazy(() => import("./pages/SavingTips/SavingTips.jsx"));
+const Categories = lazy(() => import("./pages/Categories/Categories.jsx"));
+const Notes = lazy(() => import("./pages/Notes/Notes.jsx"));
+const Profile = lazy(() => import("./pages/Profile/Profile.jsx"));
+const Notifications = lazy(() => import("./pages/Notifications/Notifications.jsx"));
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin/AdminLogin.jsx"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard/AdminDashboard.jsx"));
+const Users = lazy(() => import("./pages/admin/Users/Users.jsx"));
+const AdminCategories = lazy(() => import("./pages/admin/AdminCategories/AdminCategories.jsx"));
+const Templates = lazy(() => import("./pages/admin/Templates/Templates.jsx"));
+const Statistics = lazy(() => import("./pages/admin/Statistics/Statistics.jsx"));
+const Announcements = lazy(() => import("./pages/admin/Announcements/Announcements.jsx"));
+const Settings = lazy(() => import("./pages/admin/Settings/Settings.jsx"));
 
 import "./App.css";
 
 function App() {
-  // Restore accessibility preferences (dark mode / font size) on every reload.
-  // Previously they were only applied while the Profile page was mounted, so a
-  // page refresh silently dropped the student's saved accessibility settings.
   useEffect(() => {
     const prefs = JSON.parse(
       localStorage.getItem("student_preferences") || "{}"
@@ -59,6 +56,7 @@ function App() {
   return (
     <>
       <SessionManager />
+      <Suspense fallback={<div className="route-loading" role="status">Loading page…</div>}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -93,6 +91,7 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
 
       <Toaster
         position="top-right"

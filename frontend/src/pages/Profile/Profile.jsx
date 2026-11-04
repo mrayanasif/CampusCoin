@@ -18,6 +18,7 @@ function Profile() {
   };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [formRevision, setFormRevision] = useState(0);
   const [darkMode, setDarkMode] = useState(() => Boolean(readPreferences().darkMode));
   const [fontSize, setFontSize] = useState(() => readPreferences().fontSize || "normal");
   const [hasStoredPreferences] = useState(
@@ -28,6 +29,7 @@ function Profile() {
     email: "",
     academicYear: "",
     monthlyAllowance: 0,
+    savings: 0,
     savingsGoal: 0,
   });
 
@@ -38,6 +40,9 @@ function Profile() {
     }
 
     fetchProfile();
+    const refreshProfile = () => fetchProfile();
+    window.addEventListener("campuscoin:user-updated", refreshProfile);
+    return () => window.removeEventListener("campuscoin:user-updated", refreshProfile);
   }, []);
 
   useEffect(() => {
@@ -71,11 +76,12 @@ function Profile() {
         email: user.email || "",
         academicYear: yearMap[user.academicYear] || user.academicYear || "2",
         monthlyAllowance: user.monthlyAllowance || 0,
+        savings: res.data.availableBalance ?? (user.savingsConfigured ? user.savings || 0 : 0),
         savingsGoal: user.savingsGoal || 0,
       });
+      setFormRevision((revision) => revision + 1);
 
-      // Accessibility preferences are persisted on the user record; hydrate
-      // them (and sync localStorage) so they follow the student across devices.
+
       if (user.preferences && !hasStoredPreferences) {
         setDarkMode(Boolean(user.preferences.darkMode));
         setFontSize(user.preferences.fontSize || "normal");
@@ -103,7 +109,6 @@ function Profile() {
       return toast.error("Invalid allowance");
     if (savingsValue === "" || Number(savingsValue) < 0)
       return toast.error("Invalid savings goal");
-
     const academicYearMap = {
       "1": "1st Year",
       "2": "2nd Year",
@@ -132,6 +137,7 @@ function Profile() {
           academicYear: academicYearMap[academicYear],
           monthlyAllowance: toPKR(allowanceValue, currency),
           savingsGoal: toPKR(savingsValue, currency),
+          savings: profileResponse.data?.availableBalance ?? updatedUser.savings ?? formData.savings,
         })
       );
 
@@ -159,7 +165,7 @@ function Profile() {
         </div>
       </div>
 
-      <form className="profile-layout" onSubmit={saveProfile} noValidate>
+      <form key={formRevision} className="profile-layout" onSubmit={saveProfile} noValidate>
         <section className="profile-card">
           <h2>Personal Information</h2>
 
@@ -212,6 +218,21 @@ function Profile() {
                 defaultValue={fromPKR(formData.savingsGoal, currency)}
                 step="any"
                 aria-label={`Monthly savings goal in ${currency}`}
+              />
+            </div>
+
+            <div className="profile-field">
+              <label>Available savings balance (auto-updated, {currency})</label>
+              <input
+                key={`savings-balance-${currency}`}
+                name="savings"
+                type="number"
+                defaultValue={fromPKR(formData.savings, currency)}
+                min="0"
+                step="any"
+                readOnly
+                aria-readonly="true"
+                aria-label={`Available savings balance in ${currency}`}
               />
             </div>
           </div>

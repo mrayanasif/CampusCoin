@@ -4,8 +4,7 @@ const aiController = require("../controllers/ai.controller");
 const { protect } = require("../middleware/auth.middleware");
 const { rateLimit } = require("../middleware/rateLimit.middleware");
 
-// AI endpoints can be called while typing, so allow a higher but still bounded
-// rate: 30 requests/minute per client IP across /api/ai.
+
 router.use(
   rateLimit({
     windowMs: 60 * 1000,

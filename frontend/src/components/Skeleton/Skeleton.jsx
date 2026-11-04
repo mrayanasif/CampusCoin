@@ -1,9 +1,6 @@
 import "./Skeleton.css";
 
-/**
- * Reusable shimmer placeholder used while data is loading.
- * Keeps layout stable so pages do not jump when content arrives.
- */
+
 export function Skeleton({
   width = "100%",
   height = 16,

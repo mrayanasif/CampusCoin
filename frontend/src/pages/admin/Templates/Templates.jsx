@@ -3,6 +3,7 @@ import { Pencil, Power, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../../api/axios";
+import AdminConfirmModal from "../../../components/AdminConfirmModal/AdminConfirmModal";
 import "./Templates.css";
 
 const TRIGGER_TYPES = [
@@ -23,6 +24,8 @@ function Templates() {
     message: "",
     triggerType: "general",
   });
+  const [templateToDelete, setTemplateToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -119,15 +122,19 @@ function Templates() {
     }
   };
 
-  const removeTemplate = async (id) => {
-    if (!window.confirm("Delete this template?")) return;
+  const removeTemplate = async () => {
+    if (!templateToDelete || deleting) return;
     try {
-      await API.delete(`/admin/tip-templates/${id}`);
+      setDeleting(true);
+      await API.delete(`/admin/tip-templates/${templateToDelete._id}`);
       toast.success("Template removed");
-      setTemplates((curr) => curr.filter((t) => t._id !== id));
-      if (editingId === id) cancelEdit();
+      setTemplates((curr) => curr.filter((t) => t._id !== templateToDelete._id));
+      if (editingId === templateToDelete._id) cancelEdit();
+      setTemplateToDelete(null);
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -254,7 +261,7 @@ function Templates() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeTemplate(template._id)}
+                      onClick={() => setTemplateToDelete(template)}
                       title="Delete"
                     >
                       <Trash2 size={15} />
@@ -272,6 +279,17 @@ function Templates() {
             )
           )}
         </div>
+      )}
+
+      {templateToDelete && (
+        <AdminConfirmModal
+          title="Delete template?"
+          message={`Are you sure you want to delete “${templateToDelete.title}”? This action cannot be undone.`}
+          confirmLabel="Delete template"
+          loading={deleting}
+          onCancel={() => setTemplateToDelete(null)}
+          onConfirm={removeTemplate}
+        />
       )}
     </div>
   );

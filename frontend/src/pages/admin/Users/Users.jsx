@@ -3,12 +3,15 @@ import { Search, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../../api/axios";
+import AdminConfirmModal from "../../../components/AdminConfirmModal/AdminConfirmModal";
 import "./Users.css";
 
 function Users() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [userToReset, setUserToReset] = useState(null);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -45,13 +48,17 @@ function Users() {
     }
   };
 
-  const resetUser = async (id) => {
-    if (!window.confirm("Send password reset link to this user?")) return;
+  const resetUser = async () => {
+    if (!userToReset || resetting) return;
     try {
-      await API.put(`/admin/users/${id}/reset-password`);
+      setResetting(true);
+      await API.put(`/admin/users/${userToReset._id}/reset-password`);
       toast.success("Password reset link sent");
+      setUserToReset(null);
     } catch (error) {
       toast.error(error.response?.data?.message || "Reset failed");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -107,7 +114,7 @@ function Users() {
                   <button type="button" onClick={() => toggleStatus(user._id, user.isActive)}>
                     {user.isActive ? "Disable" : "Enable"}
                   </button>
-                  <button type="button" onClick={() => resetUser(user._id)}>
+                  <button type="button" onClick={() => setUserToReset(user)}>
                     Reset
                   </button>
                 </div>
@@ -115,6 +122,19 @@ function Users() {
             ))
           )}
         </div>
+      )}
+
+      {userToReset && (
+        <AdminConfirmModal
+          title="Send password reset link?"
+          message={`A password reset link will be sent to ${userToReset.email}.`}
+          confirmLabel="Send reset link"
+          loading={resetting}
+          loadingLabel="Sending…"
+          confirmVariant="primary"
+          onCancel={() => setUserToReset(null)}
+          onConfirm={resetUser}
+        />
       )}
     </div>
   );

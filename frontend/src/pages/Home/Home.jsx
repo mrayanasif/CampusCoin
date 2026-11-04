@@ -8,9 +8,9 @@ import campusFriendsImage from '../../assets/images/campus-friends.png';
 import './Home.css';
 
 const Hero = ({ currency = 'PKR' }) => {
-  const [activePhoneTab, setActivePhoneTab] = useState('overview'); // 'overview' | 'expenses' | 'goals'
+  const [activePhoneTab, setActivePhoneTab] = useState('overview'); 
 
-  // Dynamic currency formatted values
+
   const balance = currency === 'PKR' ? '₨ 38,450' : '$ 138.50';
   const allowanceAdded = currency === 'PKR' ? '+₨ 15,000' : '+$ 55.00';
   const foodSpend = currency === 'PKR' ? '₨ 420' : '$ 1.50';
@@ -20,11 +20,10 @@ const Hero = ({ currency = 'PKR' }) => {
 
   return (
     <section className="hero-section">
-      {/* Background radial glow */}
+
       <div className="hero-glow-sphere" />
 
       <div className="container hero-content-wrapper">
-        {/* Editorial Pill */}
         <div className="hero-badge-container">
           <span className="pill-badge pill-badge-lime animate-pulse-lime">
             <CoinMark size={16} />
@@ -32,18 +31,18 @@ const Hero = ({ currency = 'PKR' }) => {
           </span>
         </div>
 
-        {/* Hero Title */}
+
         <h1 className="hero-headline">
           FINANCIAL TECHNOLOGIES<br />
           <span className="hero-headline-highlight">FOR LIMITLESS OPPORTUNITIES</span>
         </h1>
 
-        {/* Subtitle */}
+
         <p className="hero-description">
           The student-first money cockpit designed to simplify monthly allowance tracking, crush hostel budgets, and accelerate real savings — 100% private, web-based, and without bank logins or app installs.
         </p>
 
-        {/* Action Buttons */}
+
         <div className="hero-cta-group">
           <a href="#get-started" className="btn btn-primary btn-lg">
             <Icon name="arrowRight" size={18} />
@@ -56,14 +55,14 @@ const Hero = ({ currency = 'PKR' }) => {
         </div>
       </div>
 
-      {/* Phone Mockup & Giant Background Typography */}
+
       <div className="hero-visual-container">
-        {/* Giant Watermark Text (like SWAPSTER in reference) */}
+
         <div className="hero-watermark-text" aria-hidden="true">
           CAMPUS COIN
         </div>
 
-        {/* Floating Badges */}
+
         <div className="floating-hero-badge left-badge desktop-only animate-float">
           <div className="floating-badge-icon">
             <Icon name="shieldCheck" size={18} color="#10B981" />
@@ -84,17 +83,15 @@ const Hero = ({ currency = 'PKR' }) => {
           </div>
         </div>
 
-        {/* Phone Mockup Frame */}
+
         <div className="phone-mockup-wrapper">
           <div className="phone-device-bezel">
-            {/* Dynamic Island / Speaker */}
             <div className="phone-dynamic-island">
               <div className="phone-camera-lens" />
             </div>
 
-            {/* Simulated Phone Screen */}
+
             <div className="phone-screen-content">
-              {/* Phone Header */}
               <div className="phone-top-bar">
                 <div className="phone-student-profile">
                   <div className="phone-avatar">ZK</div>
@@ -112,7 +109,7 @@ const Hero = ({ currency = 'PKR' }) => {
                 </div>
               </div>
 
-              {/* Total Balance Card */}
+
               <div className="phone-balance-hero">
                 <div className="phone-balance-label">Current Student Balance</div>
                 <div className="phone-balance-value">{balance}</div>
@@ -122,7 +119,7 @@ const Hero = ({ currency = 'PKR' }) => {
                 </div>
               </div>
 
-              {/* Quick Actions Bar */}
+
               <div className="phone-quick-actions">
                 <button type="button" className="phone-action-btn" onClick={() => setActivePhoneTab('expenses')}>
                   <div className="phone-action-icon">
@@ -150,7 +147,7 @@ const Hero = ({ currency = 'PKR' }) => {
                 </button>
               </div>
 
-              {/* Mini Interactive Switcher Inside Phone */}
+
               <div className="phone-tab-pills">
                 <button
                   type="button"
@@ -175,7 +172,7 @@ const Hero = ({ currency = 'PKR' }) => {
                 </button>
               </div>
 
-              {/* Tab 1: Activity */}
+
               {activePhoneTab === 'overview' && (
                 <div className="phone-items-list">
                   <div className="phone-list-item">
@@ -213,7 +210,7 @@ const Hero = ({ currency = 'PKR' }) => {
                 </div>
               )}
 
-              {/* Tab 2: Budget Limits */}
+
               {activePhoneTab === 'expenses' && (
                 <div className="phone-budget-breakdown">
                   <div className="phone-budget-bar-card">
@@ -246,7 +243,7 @@ const Hero = ({ currency = 'PKR' }) => {
                 </div>
               )}
 
-              {/* Tab 3: Goals */}
+
               {activePhoneTab === 'goals' && (
                 <div className="phone-goal-card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -263,7 +260,7 @@ const Hero = ({ currency = 'PKR' }) => {
                 </div>
               )}
 
-              {/* Savings Streak Callout (modeled after Swapster's referral banner) */}
+
               <div className="phone-streak-banner">
                 <div className="phone-streak-content">
                   <div className="phone-streak-title">
@@ -278,7 +275,7 @@ const Hero = ({ currency = 'PKR' }) => {
                 </div>
               </div>
 
-              {/* Simulated Phone Bottom Nav */}
+
               <div className="phone-bottom-nav">
                 <button type="button" className="phone-nav-icon active">
                   <Icon name="home" size={20} color="#FFFFFF" />
@@ -379,13 +376,13 @@ const Stats = ({ currency = 'PKR' }) => {
           </span>
         </div>
 
-        {/* Section Heading */}
+
         <h2 className="stats-heading">
           Valued by a growing student community,<br />
           strengthened by every semester
         </h2>
 
-        {/* 4-Column Stat Grid with dividers */}
+
         <div className="stats-grid">
           {statsData.map((stat, idx) => (
             <div
@@ -424,9 +421,9 @@ const SecurityFeatures = () => {
           </div>
         </div>
 
-        {/* 3-Column Bento Cards */}
+
         <div className="features-cards-grid">
-          {/* Card 1: 100% Bank-Free Privacy */}
+
           <div className="feature-card card-hover-lift">
             <div className="feature-card-content">
               <div className="feature-icon-badge" style={{ backgroundColor: 'var(--brand-lime-light)' }}>
@@ -457,7 +454,7 @@ const SecurityFeatures = () => {
             </div>
           </div>
 
-          {/* Card 2: Student-Grade Encryption */}
+
           <div className="feature-card card-hover-lift">
             <div className="feature-card-content">
               <div className="feature-icon-badge" style={{ backgroundColor: 'rgba(79, 70, 229, 0.15)' }}>
@@ -469,7 +466,7 @@ const SecurityFeatures = () => {
               </p>
             </div>
 
-            {/* Abstract Security Matrix Visualization */}
+
             <div className="feature-matrix-container">
               <div className="security-matrix-grid">
                 {[...Array(16)].map((_, i) => (
@@ -486,7 +483,7 @@ const SecurityFeatures = () => {
             </div>
           </div>
 
-          {/* Card 3: Semester Guardrails */}
+
           <div className="feature-card card-hover-lift">
             <div className="feature-card-content">
               <div className="feature-icon-badge" style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)' }}>
@@ -508,7 +505,7 @@ const SecurityFeatures = () => {
           </div>
         </div>
 
-        {/* Campus Partner Institutions Strip */}
+
         <div className="campus-partners-strip">
           <p className="campus-partners-title">
             Already trusted by students across <span style={{ fontWeight: 600, color: 'var(--ink-primary)' }}>top universities & campuses</span>
@@ -549,7 +546,6 @@ const ServicesBento = ({ currency = 'PKR' }) => {
   return (
     <section className="services-section" id="services">
       <div className="container">
-        {/* Section Header */}
         <div className="services-header-center">
           <h2 className="services-main-title">Campus Coin Services</h2>
           <p className="services-subtitle">
@@ -557,12 +553,10 @@ const ServicesBento = ({ currency = 'PKR' }) => {
           </p>
         </div>
 
-        {/* 2 Big Showcase Cards */}
+
         <div className="services-grid">
-          {/* Left: Student Wallet & Ledger (Dark Bento) */}
           <div className="service-card-dark card-hover-lift">
             <div className="dark-card-visual-top">
-              {/* Mini App UI preview card */}
               <div className="mini-cockpit-window">
                 <div className="mini-window-bar">
                   <div className="mini-dots">
@@ -597,12 +591,10 @@ const ServicesBento = ({ currency = 'PKR' }) => {
             </div>
           </div>
 
-          {/* Right: Virtual Budget Envelopes (Light Bento with tilted envelope cards) */}
+
           <div className="service-card-light card-hover-lift">
             <div className="light-card-visual-top">
-              {/* Layered Envelope Mockups (modeled after Swapster's stacked Visa/Mastercard) */}
               <div className="envelope-stack-container">
-                {/* Underneath Card: Campus Mess & Food */}
                 <div className="envelope-card envelope-underneath">
                   <div className="envelope-header">
                     <div className="envelope-chip" />
@@ -617,7 +609,7 @@ const ServicesBento = ({ currency = 'PKR' }) => {
                   </div>
                 </div>
 
-                {/* Overlapping Dark Card: Transport & Fun */}
+
                 <div className="envelope-card envelope-foreground">
                   <div className="envelope-header">
                     <div className="envelope-chip chip-white" />
@@ -644,7 +636,7 @@ const ServicesBento = ({ currency = 'PKR' }) => {
           </div>
         </div>
 
-        {/* Section Punchline */}
+
         <div className="services-punchline">
           <h3 className="punchline-text">
             One platform to control it all with smarter tools for modern student life
@@ -656,16 +648,15 @@ const ServicesBento = ({ currency = 'PKR' }) => {
 };
 
 const InteractiveCalculator = ({ currency = 'PKR' }) => {
-  // Allowance base slider value (in PKR)
   const [allowancePKR, setAllowancePKR] = useState(35000);
-  const [livingType, setLivingType] = useState('hostel'); // 'hostel' | 'dayscholar'
-  const [strategy, setStrategy] = useState('balanced'); // 'balanced' | 'aggressiveSaver' | 'chill'
+  const [livingType, setLivingType] = useState('hostel'); 
+  const [strategy, setStrategy] = useState('balanced'); 
 
-  // Conversion rate for display if USD selected
+
   const rate = currency === 'PKR' ? 1 : 1 / 278;
   const currentAllowance = Math.round(allowancePKR * rate);
 
-  // Strategy allocation percentages
+
   const allocations = {
     balanced: {
       food: livingType === 'hostel' ? 0.40 : 0.28,
@@ -702,7 +693,6 @@ const InteractiveCalculator = ({ currency = 'PKR' }) => {
   return (
     <section className="calculator-section" id="simulator">
       <div className="container">
-        {/* Section Header */}
         <div className="section-pill-center">
           <span className="pill-badge pill-badge-lime">
             <Icon name="calculator" size={15} />
@@ -717,12 +707,10 @@ const InteractiveCalculator = ({ currency = 'PKR' }) => {
           Test your monthly cashflow before the semester starts. Dial in your allowance, select your university routine, and see your optimal envelope breakdown.
         </p>
 
-        {/* Main Interactive Widget */}
+
         <div className="calculator-card-wrapper card-hover-lift">
           <div className="calculator-grid">
-            {/* Left Controls Column */}
             <div className="calculator-controls-panel">
-              {/* Allowance Slider */}
               <div className="control-group">
                 <div className="control-label-row">
                   <span className="control-label">Monthly Allowance</span>
@@ -746,7 +734,7 @@ const InteractiveCalculator = ({ currency = 'PKR' }) => {
                 </div>
               </div>
 
-              {/* Living Situation Buttons */}
+
               <div className="control-group">
                 <label className="control-label">University Living Setup</label>
                 <div className="pill-toggle-group">
@@ -767,7 +755,7 @@ const InteractiveCalculator = ({ currency = 'PKR' }) => {
                 </div>
               </div>
 
-              {/* Saving Strategy */}
+
               <div className="control-group">
                 <label className="control-label">Semester Money Strategy</label>
                 <div className="strategy-options-grid">
@@ -799,7 +787,7 @@ const InteractiveCalculator = ({ currency = 'PKR' }) => {
               </div>
             </div>
 
-            {/* Right Results & Allocation Visualizer */}
+
             <div className="calculator-results-panel">
               <div className="results-header">
                 <div className="results-badge">
@@ -814,7 +802,7 @@ const InteractiveCalculator = ({ currency = 'PKR' }) => {
                 </div>
               </div>
 
-              {/* Stacked Multi-Color Progress Bar */}
+
               <div className="distribution-stacked-bar">
                 <div
                   className="bar-slice slice-food"
@@ -843,7 +831,7 @@ const InteractiveCalculator = ({ currency = 'PKR' }) => {
                 />
               </div>
 
-              {/* Envelope Breakdown Rows */}
+
               <div className="allocation-rows-list">
                 <div className="allocation-row">
                   <div className="allocation-info">
@@ -905,7 +893,7 @@ const InteractiveCalculator = ({ currency = 'PKR' }) => {
                 </div>
               </div>
 
-              {/* Student Insight Tip */}
+
               <div className="calculator-tip-box">
                 <Icon name="sparkles" size={17} color="#2D4A13" />
                 <p>
@@ -924,7 +912,7 @@ const SocietiesSection = ({ currency = 'PKR' }) => {
   return (
     <section className="clubs-section" id="clubs">
       <div className="container">
-        {/* Section Pill */}
+
         <div className="section-pill-center">
           <span className="pill-badge pill-badge-emerald">
             <Icon name="briefcase" size={15} />
@@ -932,7 +920,7 @@ const SocietiesSection = ({ currency = 'PKR' }) => {
           </span>
         </div>
 
-        {/* Heading */}
+
         <div className="clubs-header-center">
           <h2 className="clubs-main-title">
             Keep it all organized with Campus Coin Clubs
@@ -948,9 +936,8 @@ const SocietiesSection = ({ currency = 'PKR' }) => {
           </div>
         </div>
 
-        {/* 3-Column Bento Showcase (modeled after Swapster's Business UI Grid) */}
+
         <div className="clubs-showcase-grid">
-          {/* Card 1: Active Society Budget */}
           <div className="club-ui-card card-hover-lift">
             <div className="club-card-label">ACTIVE EVENT LEDGER</div>
             <div className="club-project-name">ACM National Hackathon</div>
@@ -975,14 +962,14 @@ const SocietiesSection = ({ currency = 'PKR' }) => {
             </div>
           </div>
 
-          {/* Card 2: Developer & Society Export Flow (Middle API Showcase) */}
+
           <div className="club-api-card card-hover-lift">
             <h3 className="api-card-title">Simple Export & Ledger API</h3>
             <p className="api-card-desc">
               Generate transparent audit PDFs, CSV ledgers, and committee expense summaries with a single click.
             </p>
 
-            {/* Code Box */}
+
             <div className="api-code-terminal">
               <div className="terminal-dots">
                 <span className="t-dot dot-red" />
@@ -1002,7 +989,7 @@ const SocietiesSection = ({ currency = 'PKR' }) => {
             </div>
           </div>
 
-          {/* Card 3: Society Treasury Status */}
+
           <div className="club-ui-card card-hover-lift">
             <div className="club-treasury-header">
               <div className="club-avatar-circle">DC</div>
@@ -1035,7 +1022,6 @@ const GrowthEarnSection = ({ currency = 'PKR' }) => {
   return (
     <section className="growth-section">
       <div className="container">
-        {/* Section Header */}
         <div className="features-header-split">
           <h2 className="features-main-title">
             Grow your semester cushion powered by Campus Coin
@@ -1051,12 +1037,10 @@ const GrowthEarnSection = ({ currency = 'PKR' }) => {
           </div>
         </div>
 
-        {/* 4 Cards Grid (2x2) */}
+
         <div className="growth-grid">
-          {/* Card 1: Goal Envelopes with live goal cards */}
           <div className="growth-card card-hover-lift">
             <div className="growth-card-visual">
-              {/* Ticker / Goal Cards (modeled after BTC, AAPL, ETH ticker row in Swapster) */}
               <div className="goal-tickers-row">
                 <div className="goal-mini-card">
                   <div className="goal-mini-header">
@@ -1078,7 +1062,6 @@ const GrowthEarnSection = ({ currency = 'PKR' }) => {
                     {currency === 'PKR' ? '₨ 25,000' : '$ 90'}
                   </div>
                   <div className="goal-status-positive">Fund Ready</div>
-                  {/* Trajectory SVG line */}
                   <svg className="goal-trajectory-curve" viewBox="0 0 100 35" fill="none">
                     <path d="M 0 30 Q 30 25 50 15 T 100 5" stroke="#C7F36B" strokeWidth="2.5" strokeLinecap="round" />
                   </svg>
@@ -1105,7 +1088,7 @@ const GrowthEarnSection = ({ currency = 'PKR' }) => {
             </div>
           </div>
 
-          {/* Card 2: Roommate & Mess Splitter */}
+
           <div className="growth-card card-hover-lift">
             <div className="growth-card-visual" style={{ justifyContent: 'center' }}>
               <div className="mock-bill-split-box">
@@ -1146,7 +1129,7 @@ const GrowthEarnSection = ({ currency = 'PKR' }) => {
             </div>
           </div>
 
-          {/* Card 3: Micro-Savings Vault */}
+
           <div className="growth-card card-hover-lift">
             <div className="growth-card-visual" style={{ justifyContent: 'center' }}>
               <div className="mock-vault-box">
@@ -1171,7 +1154,7 @@ const GrowthEarnSection = ({ currency = 'PKR' }) => {
             </div>
           </div>
 
-          {/* Card 4: Intelligent Habit Insights */}
+
           <div className="growth-card card-hover-lift">
             <div className="growth-card-visual" style={{ justifyContent: 'center' }}>
               <div className="mock-insight-box">
@@ -1233,7 +1216,6 @@ const Testimonials = () => {
   return (
     <section className="testimonials-section" id="stories">
       <div className="container">
-        {/* Pill */}
         <div className="section-pill-center">
           <span className="pill-badge pill-badge-emerald">
             <Icon name="userCheck" size={15} />
@@ -1241,13 +1223,13 @@ const Testimonials = () => {
           </span>
         </div>
 
-        {/* Heading */}
+
         <h2 className="testimonials-heading">
           Real Stories, Real Experience<br />
           with Campus Coin
         </h2>
 
-        {/* 3 Review Cards */}
+
         <div className="testimonials-grid">
           {reviews.map((rev) => (
             <div
@@ -1284,7 +1266,7 @@ const Testimonials = () => {
 };
 
 const Faq = () => {
-  const [openIndex, setOpenIndex] = useState(0); // first open by default
+  const [openIndex, setOpenIndex] = useState(0); 
 
   const faqs = [
     {
@@ -1321,7 +1303,6 @@ const Faq = () => {
     <section className="faq-section" id="faq">
       <div className="container">
         <div className="faq-layout-split">
-          {/* Left Column: Heading & Contact info */}
           <div className="faq-left-col">
             <h2 className="faq-title">Frequently Asked Questions</h2>
             <p className="faq-desc">
@@ -1335,7 +1316,7 @@ const Faq = () => {
             </div>
           </div>
 
-          {/* Right Column: Interactive Accordion */}
+
           <div className="faq-accordion-list">
             {faqs.map((faq, idx) => {
               const isOpen = openIndex === idx;
@@ -1375,7 +1356,6 @@ const CtaBanner = () => {
     <section className="cta-banner-section" id="get-started">
       <div className="container">
         <div className="cta-banner-card">
-          {/* Subtle background coin glow */}
           <div className="cta-glow-spot" />
 
           <div className="cta-content-inner">

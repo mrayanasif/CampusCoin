@@ -1,7 +1,9 @@
 const SavingTip = require("../models/SavingTip");
+const Insight = require("../models/Insight");
 const { generateTipsForUser } = require("../services/tip.service");
+const { syncInsightTips } = require("../services/insight.service");
 
-// Pinned tips first, then by saving impact (SRS: ranked by potential savings).
+
 const TIP_SORT = { isPinned: -1, priority: -1, potentialSavings: -1 };
 
 const invalid = (res, message) =>
@@ -9,12 +11,33 @@ const invalid = (res, message) =>
 
 exports.getAllTips = async (req, res, next) => {
   try {
+    const insight = await Insight.findOne({ user: req.user.id }).sort({ generatedAt: -1 });
+    if (insight) {
+      const insightTipFilter = {
+        user: req.user.id,
+        source: "insight",
+        insightMonth: insight.month,
+      };
+      const insightTipExists = await SavingTip.exists(insightTipFilter);
+      if (!insightTipExists) await syncInsightTips(req.user.id, insight);
+
+      const tips = await SavingTip.find({
+        user: req.user.id,
+        isDismissed: false,
+        $or: [
+          { isPinned: true },
+          { source: "insight", insightMonth: insight.month },
+        ],
+      }).sort(TIP_SORT);
+      return res.json({ success: true, count: tips.length, tips });
+    }
+
     let tips = await SavingTip.find({
       user: req.user.id,
       isDismissed: false,
     }).sort(TIP_SORT);
 
-    // Nothing live (first visit, or all dismissed): generate from history.
+    
     if (tips.length === 0) {
       tips = await generateTipsForUser(req.user.id);
       tips = tips.sort(
@@ -48,6 +71,26 @@ exports.getTopTips = async (req, res, next) => {
 
 exports.generateTips = async (req, res, next) => {
   try {
+    const insight = await Insight.findOne({ user: req.user.id }).sort({ generatedAt: -1 });
+    if (insight) {
+      const insightTipFilter = {
+        user: req.user.id,
+        source: "insight",
+        insightMonth: insight.month,
+      };
+      const insightTipExists = await SavingTip.exists(insightTipFilter);
+      if (!insightTipExists) await syncInsightTips(req.user.id, insight);
+      const tips = await SavingTip.find({
+        user: req.user.id,
+        isDismissed: false,
+        $or: [
+          { isPinned: true },
+          { source: "insight", insightMonth: insight.month },
+        ],
+      }).sort(TIP_SORT);
+      return res.json({ success: true, message: "Tips refreshed from your latest insight", tips });
+    }
+
     const tips = await generateTipsForUser(req.user.id);
     res.json({ success: true, message: "Tips generated", tips });
   } catch (error) {

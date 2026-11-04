@@ -31,8 +31,6 @@ function rateLimit({ windowMs = 60 * 1000, max = 60, message } = {}) {
     try {
       const now = Date.now();
       const ip = req.ip || req.socket?.remoteAddress || "unknown";
-      // Keyed per client IP + mounted router/route so limits don't leak across
-      // unrelated endpoints from the same IP.
       const scope = req.baseUrl || req.path || req.originalUrl || "";
       const key = `${ip}:${scope}`;
 
@@ -68,7 +66,6 @@ function rateLimit({ windowMs = 60 * 1000, max = 60, message } = {}) {
 
       return next();
     } catch (error) {
-      // A limiter bug must never take the API down.
       console.error("Rate limiter error:", error.message);
       return next();
     }

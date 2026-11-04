@@ -3,6 +3,7 @@ import { Pencil, Plus, Power, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 import API from "../../../api/axios";
+import AdminConfirmModal from "../../../components/AdminConfirmModal/AdminConfirmModal";
 import "./AdminCategories.css";
 
 function AdminCategories() {
@@ -12,6 +13,8 @@ function AdminCategories() {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState("expense");
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -97,15 +100,19 @@ function AdminCategories() {
     }
   };
 
-  const removeCategory = async (id) => {
-    if (!window.confirm("Delete this category?")) return;
+  const removeCategory = async () => {
+    if (!categoryToDelete || deleting) return;
     try {
-      await API.delete(`/admin/categories/${id}`);
+      setDeleting(true);
+      await API.delete(`/admin/categories/${categoryToDelete._id}`);
       toast.success("Category removed");
-      setCategories((curr) => curr.filter((c) => c._id !== id));
-      if (editingId === id) cancelEdit();
+      setCategories((curr) => curr.filter((c) => c._id !== categoryToDelete._id));
+      if (editingId === categoryToDelete._id) cancelEdit();
+      setCategoryToDelete(null);
     } catch (error) {
       toast.error(error.response?.data?.message || "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -214,7 +221,7 @@ function AdminCategories() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => removeCategory(category._id)}
+                    onClick={() => setCategoryToDelete(category)}
                     title="Delete"
                   >
                     <Trash2 size={15} />
@@ -224,6 +231,17 @@ function AdminCategories() {
             </div>
           ))}
         </div>
+      )}
+
+      {categoryToDelete && (
+        <AdminConfirmModal
+          title="Delete category?"
+          message={`Are you sure you want to delete “${categoryToDelete.name}”? This action cannot be undone.`}
+          confirmLabel="Delete category"
+          loading={deleting}
+          onCancel={() => setCategoryToDelete(null)}
+          onConfirm={removeCategory}
+        />
       )}
     </div>
   );

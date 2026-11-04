@@ -1,8 +1,6 @@
 const nodemailer = require("nodemailer");
 
-// Public frontend base URL used in every user-facing email link.
-// Set FRONTEND_URL in the deployment environment (e.g. the Vercel frontend URL);
-// localhost is only a development fallback.
+
 const FRONTEND_URL = (process.env.FRONTEND_URL || "http://localhost:5173").replace(
   /\/+$/,
   ""
@@ -53,12 +51,12 @@ async function getTransporter() {
     }
   }
 
-  // Fallback to default transporter if verification fails or no candidates
+
   cachedTransporter = createTransporter(candidates[0]);
   return cachedTransporter;
 }
 
-// Initial connection check at startup
+
 getTransporter().catch((error) => {
   console.log("⚠️  Email service not configured:", error.message);
 });

@@ -12,16 +12,13 @@ const ConnectDB = require("../config/db");
 const errorHandler = require("../middleware/error.middleware");
 const { getJwtSecret } = require("../utils/jwt");
 
-// Fail fast on insecure production deployments: throws when NODE_ENV is
-// "production" and JWT_SECRET is missing (dev keeps the fallback + warning).
+
 getJwtSecret();
 
 const app = express();
 
-// Required so rate limiting sees the real client IP behind Vercel/reverse proxies.
 app.set("trust proxy", 1);
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -130,8 +127,7 @@ app.use("/api/ai", require("../routes/ai.routes"));
 app.use("/api/activity", require("../routes/activity.routes"));
 app.use("/api/admin", require("../routes/admin.routes"));
 
-// ── TEMPORARY one-time backfill: creates missing allowance transactions ──
-// Call once: GET /api/backfill-allowances  — then remove this block.
+
 app.get("/api/backfill-allowances", async (req, res) => {
   try {
     const User = require("../models/User");
@@ -167,10 +163,7 @@ app.get("/api/backfill-allowances", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-// ── END TEMPORARY ────────────────────────────────────────────────────────
 
-
-// Consistent JSON 404 for unknown routes instead of Express' HTML default.
 app.use((req, res) => {
   res.status(404).json({
     success: false,

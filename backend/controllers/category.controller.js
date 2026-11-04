@@ -121,8 +121,6 @@ exports.updateCategory = async (req, res, next) => {
     if (body.type !== undefined) {
       if (!TYPES.includes(body.type)) return invalid(res, "Type must be income or expense");
       if (body.type !== category.type) {
-        // Intentionally counts soft-deleted transactions too: retained (deleted)
-        // history still references this category, so its type/label must stay.
         const [transactionCount, budgetCount] = await Promise.all([
           Transaction.countDocuments({ category: category._id }),
           Budget.countDocuments({ category: category._id }),
@@ -137,7 +135,6 @@ exports.updateCategory = async (req, res, next) => {
       }
     }
 
-    // Note: isDefault / createdBy are intentionally not client-writable.
     const updated = await Category.findByIdAndUpdate(
       category._id,
       update,
@@ -161,8 +158,6 @@ exports.deleteCategory = async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Not allowed" });
     }
 
-    // Intentionally counts soft-deleted transactions too, so retained history
-    // never ends up pointing at a removed category.
     const [transactionCount, budgetCount] = await Promise.all([
       Transaction.countDocuments({ category: category._id }),
       Budget.countDocuments({ category: category._id }),

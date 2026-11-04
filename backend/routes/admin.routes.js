@@ -19,6 +19,7 @@ router.put("/users/:id/reset-password", adminController.resetUserPassword);
 
 router.get("/stats/overview", adminController.getStatsOverview);
 router.get("/stats/usage", adminController.getUsageStats);
+router.get("/stats/recent-transactions", adminController.getRecentTransactions);
 
 
 router.get("/categories", adminCategoryController.getAllDefaultCategories);

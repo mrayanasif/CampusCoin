@@ -1,0 +1,89 @@
+date,category,amount,type,description
+1/1/2026,Allowance,15000,income,Monthly allowance
+1/4/2026,Food,3200,expense,Campus meals and groceries
+1/7/2026,Transport,900,expense,Bus and local travel
+1/10/2026,Hostel/Rent,5000,expense,Monthly hostel rent
+1/13/2026,Academics,700,expense,Books and study supplies
+1/16/2026,Subscriptions,499,expense,Study and entertainment subscriptions
+1/20/2026,Entertainment,800,expense,Leisure and outings
+1/24/2026,Miscellaneous,500,expense,Personal miscellaneous expense
+2/1/2026,Allowance,15000,income,Monthly allowance
+2/4/2026,Food,3500,expense,Campus meals and groceries
+2/7/2026,Transport,850,expense,Bus and local travel
+2/10/2026,Hostel/Rent,5000,expense,Monthly hostel rent
+2/13/2026,Academics,450,expense,Books and study supplies
+2/16/2026,Subscriptions,499,expense,Study and entertainment subscriptions
+2/20/2026,Entertainment,650,expense,Leisure and outings
+2/24/2026,Miscellaneous,700,expense,Personal miscellaneous expense
+3/1/2026,Allowance,15000,income,Monthly allowance
+3/4/2026,Food,3300,expense,Campus meals and groceries
+3/7/2026,Transport,1000,expense,Bus and local travel
+3/10/2026,Hostel/Rent,5000,expense,Monthly hostel rent
+3/13/2026,Academics,900,expense,Books and study supplies
+3/16/2026,Subscriptions,599,expense,Study and entertainment subscriptions
+3/20/2026,Entertainment,900,expense,Leisure and outings
+3/24/2026,Miscellaneous,450,expense,Personal miscellaneous expense
+4/1/2026,Allowance,15000,income,Monthly allowance
+4/4/2026,Food,3700,expense,Campus meals and groceries
+4/7/2026,Transport,950,expense,Bus and local travel
+4/10/2026,Hostel/Rent,5000,expense,Monthly hostel rent
+4/13/2026,Academics,600,expense,Books and study supplies
+4/16/2026,Subscriptions,499,expense,Study and entertainment subscriptions
+4/20/2026,Entertainment,700,expense,Leisure and outings
+4/24/2026,Miscellaneous,800,expense,Personal miscellaneous expense
+5/1/2026,Allowance,15000,income,Monthly allowance
+5/4/2026,Food,3900,expense,Campus meals and groceries
+5/7/2026,Transport,1100,expense,Bus and local travel
+5/10/2026,Hostel/Rent,5000,expense,Monthly hostel rent
+5/13/2026,Academics,1200,expense,Books and study supplies
+5/16/2026,Subscriptions,599,expense,Study and entertainment subscriptions
+5/20/2026,Entertainment,1000,expense,Leisure and outings
+5/24/2026,Miscellaneous,650,expense,Personal miscellaneous expense
+6/1/2026,Allowance,16000,income,Monthly allowance
+6/4/2026,Food,3600,expense,Campus meals and groceries
+6/7/2026,Transport,1050,expense,Bus and local travel
+6/10/2026,Hostel/Rent,5000,expense,Monthly hostel rent
+6/13/2026,Academics,800,expense,Books and study supplies
+6/16/2026,Subscriptions,599,expense,Study and entertainment subscriptions
+6/20/2026,Entertainment,850,expense,Leisure and outings
+6/24/2026,Miscellaneous,900,expense,Personal miscellaneous expense
+7/1/2026,Allowance,16000,income,Monthly allowance
+7/4/2026,Food,4100,expense,Campus meals and groceries
+7/7/2026,Transport,1200,expense,Bus and local travel
+7/10/2026,Hostel/Rent,5200,expense,Monthly hostel rent
+7/13/2026,Academics,500,expense,Books and study supplies
+7/16/2026,Subscriptions,599,expense,Study and entertainment subscriptions
+7/20/2026,Entertainment,1100,expense,Leisure and outings
+7/24/2026,Miscellaneous,750,expense,Personal miscellaneous expense
+8/1/2026,Allowance,16000,income,Monthly allowance
+8/4/2026,Food,3800,expense,Campus meals and groceries
+8/7/2026,Transport,1000,expense,Bus and local travel
+8/10/2026,Hostel/Rent,5200,expense,Monthly hostel rent
+8/13/2026,Academics,1100,expense,Books and study supplies
+8/16/2026,Subscriptions,699,expense,Study and entertainment subscriptions
+8/20/2026,Entertainment,900,expense,Leisure and outings
+8/24/2026,Miscellaneous,600,expense,Personal miscellaneous expense
+9/1/2026,Allowance,16000,income,Monthly allowance
+9/4/2026,Food,4200,expense,Campus meals and groceries
+9/7/2026,Transport,1150,expense,Bus and local travel
+9/10/2026,Hostel/Rent,5200,expense,Monthly hostel rent
+9/13/2026,Academics,750,expense,Books and study supplies
+9/16/2026,Subscriptions,599,expense,Study and entertainment subscriptions
+9/20/2026,Entertainment,1200,expense,Leisure and outings
+9/24/2026,Miscellaneous,850,expense,Personal miscellaneous expense
+10/1/2026,Allowance,16000,income,Monthly allowance
+10/4/2026,Food,4000,expense,Campus meals and groceries
+10/7/2026,Transport,1250,expense,Bus and local travel
+10/10/2026,Hostel/Rent,5200,expense,Monthly hostel rent
+10/13/2026,Academics,1300,expense,Books and study supplies
+10/16/2026,Subscriptions,699,expense,Study and entertainment subscriptions
+10/20/2026,Entertainment,950,expense,Leisure and outings
+10/24/2026,Miscellaneous,700,expense,Personal miscellaneous expense
+11/1/2026,Allowance,16000,income,Monthly allowance
+11/1/2026,Food,3900,expense,Campus meals and groceries
+11/1/2026,Transport,1000,expense,Bus and local travel
+11/1/2026,Hostel/Rent,5200,expense,Monthly hostel rent
+11/1/2026,Academics,900,expense,Books and study supplies
+11/1/2026,Subscriptions,699,expense,Study and entertainment subscriptions
+11/1/2026,Entertainment,1000,expense,Leisure and outings
+11/1/2026,Miscellaneous,900,expense,Personal miscellaneous expense

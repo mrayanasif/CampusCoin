@@ -84,7 +84,7 @@ exports.create = async (req, res, next) => {
         .json({ success: false, message: "Referenced item not found" });
     }
 
-    // Explicit field list: never trust a client-supplied `user`.
+
     const note = await Note.create({
       user: req.user.id,
       referenceType,

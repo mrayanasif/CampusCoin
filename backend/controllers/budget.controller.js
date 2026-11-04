@@ -97,8 +97,6 @@ exports.createBudget = async (req, res, next) => {
     );
     if (error) return invalid(res, error);
 
-    // One budget per category per month: re-posting updates the existing goal
-    // instead of silently duplicating it.
     const existing = await Budget.findOne({
       user: req.user.id,
       category: category._id,

@@ -1,6 +1,6 @@
 const Transaction = require("../models/Transaction");
-const Category = require("../models/Category"); // ← NEW: needed to seed allowance
-const User = require("../models/User"); // ← NEW: needed for summary fallback
+const Category = require("../models/Category"); 
+const User = require("../models/User"); 
 const Budget = require("../models/Budget");
 const ActivityLog = require("../models/ActivityLog");
 const { checkBudgetAlert } = require("../services/budgetAlert.service");
@@ -15,7 +15,9 @@ const {
 } = require("../utils/validation");
 
 const TYPES = ["income", "expense"];
-const SOURCES = ["manual", "csv", "ai", "recurring", "allowance"]; // ← added "allowance"
+const SOURCES = ["manual", "csv", "ai", "recurring", "allowance"]; 
+
+exports.syncMonthlySavings = syncMonthlySavings;
 
 function isCurrentMonth(dateValue) {
   const date = new Date(dateValue);
@@ -46,48 +48,74 @@ async function syncMonthlyAllowance(userId, transaction, categoryName = "") {
   });
 }
 
-async function getUserSavings(userId) {
-  const user = await User.findById(userId);
-  if (!user) return 0;
+async function syncMonthlySavings(userId, transactionDate) {
+  if (!isCurrentMonth(transactionDate)) return;
+  const month = new Date(transactionDate).toISOString().slice(0, 7);
+  const { start, end } = monthRange(month);
+  const [totals, user] = await Promise.all([
+    Transaction.aggregate([
+      {
+        $match: {
+          user: userId,
+          deletedAt: null,
+          date: { $gte: start, $lt: end },
+        },
+      },
+      { $group: { _id: "$type", total: { $sum: "$amount" } } },
+    ]),
+    User.findById(userId).select("monthlyAllowance"),
+  ]);
+  if (!user) return;
 
-  const totals = await Transaction.aggregate([
+  const income = totals.find((item) => item._id === "income")?.total || 0;
+  const expenses = totals.find((item) => item._id === "expense")?.total || 0;
+  const monthlySavings = Math.max(
+    0,
+    (income > 0 ? income : Number(user.monthlyAllowance) || 0) - expenses
+  );
+  await User.updateOne(
+    { _id: userId },
     {
-      $match: {
-        user: user._id,
-        deletedAt: null,
+      $set: {
+        savings: monthlySavings,
+        savingsConfigured: true,
       },
-    },
-    {
-      $group: {
-        _id: "$type",
-        total: { $sum: "$amount" },
-      },
-    },
+    }
+  );
+}
+
+async function getUserSavings(userId) {
+  const user = await User.findById(userId).select("savings savingsConfigured");
+  if (!user?.savingsConfigured) return 0;
+  return Math.max(0, Number(user.savings) || 0);
+}
+
+async function getMonthlySpendableBalance(userId, date, excludeTransactionId = null) {
+  const monthStr = new Date(date).toISOString().slice(0, 7);
+  const { start, end } = monthRange(monthStr);
+  const match = {
+    user: userId,
+    deletedAt: null,
+    date: { $gte: start, $lt: end },
+  };
+  if (excludeTransactionId) match._id = { $ne: excludeTransactionId };
+
+  const [totals, user] = await Promise.all([
+    Transaction.aggregate([
+      { $match: match },
+      { $group: { _id: "$type", total: { $sum: "$amount" } } },
+    ]),
+    User.findById(userId).select("monthlyAllowance"),
   ]);
 
-  let totalIncome = totals.find((t) => t._id === "income")?.total || 0;
-  const totalExpense = totals.find((t) => t._id === "expense")?.total || 0;
-
-  const hasAllowance = await Transaction.exists({
-    user: user._id,
-    type: "income",
-    deletedAt: null,
-  });
-  if (!hasAllowance && Number(user.monthlyAllowance) > 0) {
-    totalIncome += Number(user.monthlyAllowance);
-  }
-
-  const netSavings = Math.max(0, totalIncome - totalExpense);
-
-  if (typeof user.savings === "number" && user.savings > 0) {
-    return Math.min(user.savings, netSavings);
-  }
-
-  if (netSavings > 0) {
-    await User.findByIdAndUpdate(userId, { $set: { savings: netSavings } });
-  }
-
-  return netSavings;
+  const income = totals.find((item) => item._id === "income")?.total || 0;
+  const expenses = totals.find((item) => item._id === "expense")?.total || 0;
+  const effectiveIncome = income > 0 ? income : Number(user?.monthlyAllowance) || 0;
+  const cashflowBalance = effectiveIncome - expenses;
+  return {
+    cashflowBalance,
+    availableBalance: Math.max(0, cashflowBalance),
+  };
 }
 
 exports.getSavingsBalance = async (req, res, next) => {
@@ -128,13 +156,6 @@ async function resolveCategoryOrError(userId, categoryId, type) {
   return { category };
 }
 
-/**
- * ── NEW ───────────────────────────────────────────────────────────────
- * Find (or lazily create) the per-user income category used to record the
- * monthly allowance. Kept inside the transaction module so authController
- * only needs one import.
- * ─────────────────────────────────────────────────────────────────────
- */
 async function findOrCreateAllowanceCategory(userId) {
   let category = await Category.findOne({
     user: userId,
@@ -152,14 +173,6 @@ async function findOrCreateAllowanceCategory(userId) {
   return category;
 }
 
-/**
- * ── NEW ───────────────────────────────────────────────────────────────
- * Seed a single income transaction for the monthly allowance.
- * Called from authController.register() right after User.create().
- * Returns the created transaction, or null if the amount is not positive.
- * Throws only if the DB write itself fails (register() wraps in try/catch).
- * ─────────────────────────────────────────────────────────────────────
- */
 exports.seedAllowanceIncome = async (userId, amount) => {
   const numeric = Number(amount);
   if (!Number.isFinite(numeric) || numeric <= 0) return null;
@@ -345,35 +358,86 @@ exports.createTransaction = async (req, res, next) => {
 
           isDeductedFromSavings = true;
           actualDeductedAmount = excess;
-
-          const remainingSavings = Math.max(0, availableSavings - excess);
-          await User.findByIdAndUpdate(req.user.id, {
-            $set: { savings: remainingSavings },
-          });
         }
       }
     }
 
-    const t = await Transaction.create({
-      user: req.user.id,
-      category: resolvedCategory._id,
-      amount: numericAmount,
-      type,
-      description: description ? description.trim() : "",
-      date: parsedDate,
-      isRecurring: Boolean(isRecurring),
-      source: "manual",
-      deductedFromSavings: isDeductedFromSavings,
-      savingsDeductedAmount: actualDeductedAmount,
-    });
+    if (type === "expense") {
+      const balance = await getMonthlySpendableBalance(req.user._id, parsedDate);
+      if (numericAmount > balance.availableBalance) {
+        return res.status(400).json({
+          success: false,
+          insufficientBalance: true,
+          availableBalance: balance.availableBalance,
+          message: `Insufficient allowance balance. You have ${balance.availableBalance} remaining this month, but this expense is ${numericAmount}. Expenses cannot exceed your income.`,
+        });
+      }
+    }
 
-    await syncMonthlyAllowance(req.user.id, t, resolvedCategory.name);
+    let savingsReserved = false;
+    if (isDeductedFromSavings) {
+      const reserved = await User.findOneAndUpdate(
+        {
+          _id: req.user.id,
+          savingsConfigured: true,
+          savings: { $gte: actualDeductedAmount },
+        },
+        { $inc: { savings: -actualDeductedAmount } },
+        { new: true }
+      );
+      if (!reserved) {
+        const availableSavings = await getUserSavings(req.user.id);
+        return res.status(400).json({
+          success: false,
+          insufficientSavings: true,
+          excessAmount: actualDeductedAmount,
+          availableSavings,
+          message: `You don't have enough savings! Available savings is ${availableSavings}, but ${actualDeductedAmount} is needed.`,
+        });
+      }
+      savingsReserved = true;
+    }
 
-    await ActivityLog.create({
-      user: req.user.id,
-      action: "create_transaction",
-      referenceId: t._id,
-      referenceModel: "Transaction",
+    let t;
+    try {
+      t = await Transaction.create({
+        user: req.user.id,
+        category: resolvedCategory._id,
+        amount: numericAmount,
+        type,
+        description: description ? description.trim() : "",
+        date: parsedDate,
+        isRecurring: Boolean(isRecurring),
+        source: "manual",
+        deductedFromSavings: isDeductedFromSavings,
+        savingsDeductedAmount: actualDeductedAmount,
+      });
+    } catch (error) {
+      if (savingsReserved) {
+        await User.findByIdAndUpdate(req.user.id, {
+          $inc: { savings: actualDeductedAmount },
+        });
+      }
+      throw error;
+    }
+
+    // The transaction is already durably saved. Keep auxiliary bookkeeping
+    // failures from turning a successful save into an error response (which
+    // can make the client retry and create a duplicate transaction).
+    const followUpResults = await Promise.allSettled([
+      syncMonthlyAllowance(req.user.id, t, resolvedCategory.name),
+      syncMonthlySavings(req.user._id, t.date),
+      ActivityLog.create({
+        user: req.user.id,
+        action: "create_transaction",
+        referenceId: t._id,
+        referenceModel: "Transaction",
+      }),
+    ]);
+    followUpResults.forEach((result) => {
+      if (result.status === "rejected") {
+        console.error("Transaction follow-up failed:", result.reason?.message || result.reason);
+      }
     });
 
     checkBudgetAlert(req.user._id, resolvedCategory._id, type).catch(() => {});
@@ -437,7 +501,7 @@ exports.updateTransaction = async (req, res, next) => {
 
     if (body.category !== undefined || update.type !== undefined) {
       const { category: resolvedCategory, error } = await resolveCategoryOrError(
-        req.user.id,
+        req.user._id,
         nextCategoryId,
         nextType
       );
@@ -445,8 +509,9 @@ exports.updateTransaction = async (req, res, next) => {
       update.category = resolvedCategory._id;
     }
 
-    let isDeductedFromSavings = existing.deductedFromSavings || false;
-    let actualDeductedAmount = existing.savingsDeductedAmount || 0;
+    const previousSavingsDeduction = Number(existing.savingsDeductedAmount) || 0;
+    let isDeductedFromSavings = false;
+    let actualDeductedAmount = 0;
 
     if (nextType === "expense") {
       const targetDate = update.date || existing.date;
@@ -482,7 +547,8 @@ exports.updateTransaction = async (req, res, next) => {
 
         if (projected > budget.limitAmount) {
           const excess = projected - budget.limitAmount;
-          const availableSavings = await getUserSavings(req.user.id);
+          const availableSavings =
+            (await getUserSavings(req.user.id)) + previousSavingsDeduction;
 
           if (!body.deductFromSavings) {
             return res.status(400).json({
@@ -507,12 +573,25 @@ exports.updateTransaction = async (req, res, next) => {
 
           isDeductedFromSavings = true;
           actualDeductedAmount = excess;
-
-          const remainingSavings = Math.max(0, availableSavings - excess);
-          await User.findByIdAndUpdate(req.user.id, {
-            $set: { savings: remainingSavings },
-          });
         }
+      }
+    }
+
+    if (nextType === "expense") {
+      const targetDate = update.date || existing.date;
+      const targetAmount = update.amount !== undefined ? update.amount : existing.amount;
+      const balance = await getMonthlySpendableBalance(
+        req.user._id,
+        targetDate,
+        existing._id
+      );
+      if (targetAmount > balance.availableBalance) {
+        return res.status(400).json({
+          success: false,
+          insufficientBalance: true,
+          availableBalance: balance.availableBalance,
+          message: `Insufficient allowance balance. You have ${balance.availableBalance} remaining this month, but this expense is ${targetAmount}. Expenses cannot exceed your income.`,
+        });
       }
     }
 
@@ -525,7 +604,15 @@ exports.updateTransaction = async (req, res, next) => {
       { new: true, runValidators: true }
     ).populate("category", "name type");
 
+    const savingsDelta = previousSavingsDeduction - actualDeductedAmount;
+    if (savingsDelta !== 0) {
+      await User.findByIdAndUpdate(req.user.id, {
+        $inc: { savings: savingsDelta },
+      });
+    }
+
     await syncMonthlyAllowance(req.user.id, t, t.category?.name);
+    await syncMonthlySavings(req.user._id, t.date);
 
     await ActivityLog.create({
       user: req.user.id,
@@ -554,6 +641,8 @@ exports.deleteTransaction = async (req, res, next) => {
       { new: true }
     );
     if (!t) return res.status(404).json({ success: false, message: "Not found" });
+
+    await syncMonthlySavings(req.user._id, t.date);
 
     await ActivityLog.create({
       user: req.user.id,
@@ -585,9 +674,35 @@ exports.getDeletedTransactions = async (req, res, next) => {
   }
 };
 
+exports.permanentlyDeleteAllDeleted = async (req, res, next) => {
+  try {
+    const result = await Transaction.deleteMany({
+      user: req.user.id,
+      deletedAt: { $ne: null },
+    });
+
+    res.json({
+      success: true,
+      deletedCount: result.deletedCount || 0,
+      message: `${result.deletedCount || 0} deleted transaction(s) permanently removed`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.restoreTransaction = async (req, res, next) => {
   try {
     if (!isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: "Not found" });
+    }
+
+    const deletedTransaction = await Transaction.findOne({
+      _id: req.params.id,
+      user: req.user.id,
+      deletedAt: { $ne: null },
+    }).populate("category", "name");
+    if (!deletedTransaction) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
 
@@ -604,6 +719,8 @@ exports.restoreTransaction = async (req, res, next) => {
     if (!transaction) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
+
+    await syncMonthlySavings(req.user._id, transaction.date);
 
     await ActivityLog.create({
       user: req.user.id,
@@ -656,15 +773,6 @@ exports.bulkDelete = async (req, res, next) => {
   }
 };
 
-/**
- * ── UPDATED ───────────────────────────────────────────────────────────
- * Same output shape as before, with a safety net: if the month has zero
- * income transactions but the user's profile carries a monthlyAllowance,
- * surface the allowance so the dashboard never silently shows ₹0 for a
- * user whose allowance was saved but never seeded (legacy accounts, or a
- * seed that failed during registration).
- * ─────────────────────────────────────────────────────────────────────
- */
 exports.getMonthlySummary = async (req, res, next) => {
   try {
     const month = req.query.month || currentMonth();
@@ -703,19 +811,13 @@ exports.getMonthlySummary = async (req, res, next) => {
       income,
       expense,
       balance: income - expense,
-      incomeFallback, // ← lets the UI label it "from allowance" if desired
+      incomeFallback, 
     });
   } catch (e) {
     next(e);
   }
 };
 
-/**
- * ── NEW ───────────────────────────────────────────────────────────────
- * Dashboard summary: same idea as getMonthlySummary but always current
- * month and flattened into the fields a dashboard typically renders.
- * ─────────────────────────────────────────────────────────────────────
- */
 exports.getSummary = async (req, res, next) => {
   try {
     const month = currentMonth();

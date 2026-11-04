@@ -1,8 +1,3 @@
-// Central JWT configuration.
-//
-// Development may run without JWT_SECRET (insecure fallback) so existing local
-// workflows keep working, but production must fail loudly instead of silently
-// signing tokens with a well-known secret.
 const DEV_FALLBACK_SECRET = "secret123";
 const DEFAULT_EXPIRE = "7d";
 

@@ -356,3 +356,11 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.15);
 }
+
+.route-loading {
+  display: grid;
+  min-height: 45vh;
+  place-items: center;
+  color: var(--ink-secondary, #737373);
+  font-size: 14px;
+}
