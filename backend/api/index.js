@@ -28,6 +28,10 @@ app.use(
       "http://localhost:5173",
       "http://localhost:3001",
       "http://localhost:5000",
+      ...(process.env.FRONTEND_URL || "")
+        .split(",")
+        .map((url) => url.trim().replace(/\/$/, ""))
+        .filter(Boolean),
       "https://sfc-mindforge-frontend.vercel.app",
       "https://sfc-mindforge-backend.vercel.app",
     ],
