@@ -7,10 +7,10 @@
 | **SRS** | [`CampusCoin End-to-End Web Solutions_SRS.pdf`](<CampusCoin End-to-End Web Solutions_SRS.pdf>) |
 | **Theme / category** | NextGen BudgetBee — End-to-End Web Solutions |
 | **Stack** | MongoDB Atlas + Express 5 + React 19 + Node.js (MERN), Vite 8, Bootstrap 5 |
-| **Hosted frontend** | https://sfc-mindforge-frontend.vercel.app |
-| **Hosted API** | https://sfc-mindforge-backend.vercel.app &nbsp;·&nbsp; health: https://sfc-mindforge-backend.vercel.app/health |
+| **Hosted frontend** | https://campus-coin-seven.vercel.app |
+| **Hosted API** | https://campuscoin-backend-nine.vercel.app &nbsp;·&nbsp; health: https://campuscoin-backend-nine.vercel.app/health |
 
-> **Deployment note:** the live frontend build may lag the current repository until it is redeployed (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)). Verify the hosted URLs after any redeploy.
+> **Deployment note (2026-11-05):** Vercel reports both projects Ready. The frontend and backend are separate projects from this repo; their production environment variables must point to each other's URLs (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)).
 
 ---
 
@@ -20,9 +20,7 @@ Seeded by the backend seed script (see [Seeding test data](#seeding-test-data) a
 
 | Role | Email | Password | Purpose |
 |---|---|---|---|
-| Administrator | `admin@campuscoin.test` | `Admin@12345` | Admin panel (`/admin/login`) |
-| Student (primary demo) | `student@campuscoin.test` | `Student@12345` | Student portal (`/login`) |
-| Student (secondary) | `student2@campuscoin.test` | `Student@12345` | Ownership/security checks (two-student isolation) |
+| Student (primary demo) | `student@gmail.com` | `Student@12345` | Student portal (`/login`) |
 
 > **Seed status — EXECUTED & VERIFIED (2026-10-27 20:58 PKT):** the backend engineer ran `npm run seed` three times (idempotent) against the configured Atlas database, and the Lead independently verified the logins against the hosted API: `admin@campuscoin.test` → 200 with `role=admin`, `student@campuscoin.test` → 200 (`name = Ayesha Khan`). Actual seeded counts: **users=3, categories=13, demo transactions=131, budgets=3, recurring=1, insights=2, savingTips=7**, data spanning **2026-05 → 2026-10**. The three credentials above are live. Safety guard: when `NODE_ENV=production`, the script refuses to run unless `ALLOW_DEMO_SEED=true` is set. Details and the verified hosted evidence are in [docs/TEST_DATA.md](docs/TEST_DATA.md).
 
@@ -118,7 +116,7 @@ SFC-Mindforge/
 - **Node.js 20.19+ or 22.12+** (Vite 8 requirement) and npm.
 - **MongoDB** — a MongoDB Atlas cluster URI (or local `mongod`). Atlas network access must allow your IP / `0.0.0.0/0` for hosted deployments.
 - **SMTP account** (optional but needed for password-reset and report emails; any SMTP provider works — the template uses Gmail).
-- **Git** and two GitHub repositories (frontend/backend are separate repos with `origin` remotes configured).
+- **Git** and the CampusCoin repository connected to two Vercel projects (frontend/backend use separate project root directories).
 
 ---
 
@@ -144,7 +142,7 @@ Backend environment variables (template: `backend/.env.example`):
 | `DBURI` | ✅ | `mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majority` |
 | `JWT_SECRET` | ✅ | long random string — generate with `openssl rand -hex 32` |
 | `JWT_EXPIRE` | optional | `7d` (default) |
-| `FRONTEND_URL` | ✅ for emails | `http://localhost:5173` locally; hosted frontend URL in production |
+| `FRONTEND_URL` | ✅ for email links and production CORS | `http://localhost:5173` locally; `https://campus-coin-seven.vercel.app` in production (no trailing slash or `/api`) |
 | `EMAIL_HOST` | for emails | `smtp.gmail.com` |
 | `EMAIL_PORT` | for emails | `587` |
 | `EMAIL_USER` | for emails | SMTP username / sender address |
@@ -174,7 +172,7 @@ Frontend environment variables:
 
 | Variable | Required | Example |
 |---|---|---|
-| `VITE_API_URL` | ✅ | local: `http://localhost:5000/api`; hosted: `https://sfc-mindforge-backend.vercel.app/api` |
+| `VITE_API_URL` | ✅ | local: `http://localhost:5000/api`; hosted: `https://campuscoin-backend-nine.vercel.app/api` |
 
 API calls attach `Authorization: Bearer <JWT>` from `localStorage` and clear the session on a `401` response (`frontend/src/api/axios.js`).
 
@@ -193,7 +191,7 @@ The seed script (`npm run seed` → `backend/seedDemo.js`) creates:
 
 The script is idempotent: it deletes/recreates only data owned by the three demo accounts, so it is safe to re-run (it was run three times during setup). It also refuses to run when `NODE_ENV=production` unless `ALLOW_DEMO_SEED=true` is set.
 
-> **Execution status — DONE:** seeded against the configured Atlas database and verified via the hosted API on 2026-10-27 20:58 PKT (admin and student logins returned 200). The hosted *deployment* is still stale: it returns the old dashboard payload shape (`budgets`/`spendingBreakdown` are `null`) until Vercel is redeployed. Email delivery, browser E2E and responsive/accessibility checks remain **NOT RUN** — see [docs/TEST_DATA.md](docs/TEST_DATA.md).
+> **Prior seed verification:** demo data and admin/student login were verified against the previously configured Atlas deployment on 2026-10-27. The current Vercel URLs are listed at the top of this README; confirm the health endpoint and login there before relying on the old verification. Email delivery, browser E2E and responsive/accessibility checks remain **NOT RUN** — see [docs/TEST_DATA.md](docs/TEST_DATA.md).
 
 ---
 
@@ -230,12 +228,12 @@ PDF/image report export is implemented **in the browser** (html2canvas + jsPDF);
 
 Full step-by-step instructions, env-var tables and troubleshooting: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 
-1. **Backend (Vercel):** new project from the backend repo → Node serverless (uses `vercel.json`) → set env vars (`DBURI`, `JWT_SECRET`, `JWT_EXPIRE`, `FRONTEND_URL`, `EMAIL_*`, `NODE_ENV=production`) → deploy. Confirm `https://<backend>/health` returns 200/Connected.
-2. **Frontend (Vercel):** new project from the frontend repo → framework Vite, build `npm run build`, output `dist` → set `VITE_API_URL=https://<backend-domain>/api` → deploy. SPA deep links work via `vercel.json` rewrites.
-3. **Seed the production database** once (run the seed script with the production `DBURI`).
-4. Redeploy both projects after any code change (`git push` on the connected branch, or Vercel → **Redeploy**).
+1. **Backend (Vercel):** create a project from this Git repo with root directory `backend`; set `DBURI`, `JWT_SECRET`, `NODE_ENV=production`, and `FRONTEND_URL=https://campus-coin-seven.vercel.app` (plus `EMAIL_*` if email is needed). Deploy and confirm `https://campuscoin-backend-nine.vercel.app/health` reports the database as connected.
+2. **Frontend (Vercel):** create a second project from the same Git repo with root directory `frontend`; set `VITE_API_URL=https://campuscoin-backend-nine.vercel.app/api`. Build with `npm run build` and output `dist`; the existing `vercel.json` handles SPA routes.
+3. In Vercel, set the variables for the Production environment and redeploy each project after changing them. Vercel applies environment variable changes to new deployments.
+4. Do not run `npm run seed` against a production database unless you intentionally want to create/reset the demo accounts and their demo data.
 
-**CORS:** the API allow-list is hard-coded in `backend/api/index.js` to localhost ports and the two Vercel domains. A new/custom domain requires adding it there.
+**CORS:** `backend/api/index.js` reads the allowed frontend origin from `FRONTEND_URL` (it also accepts a comma-separated list). Set this to the frontend origin only, without `/api`; redeploy the backend after changing it. The current frontend/API domains are listed at the top of this README.
 
 ---
 
